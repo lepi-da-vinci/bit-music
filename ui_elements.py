@@ -41,6 +41,7 @@ class LCDDisplay:
         self.bar_gap = 2
         self.bars = [0.0] * self.num_bars
         self.target_bars = [0.0] * self.num_bars
+        self.bass_pulse = 0.0  # NEW: exported for turntable glow
         
     def update(self, dt, is_playing, audio_engine=None):
         self.marquee_offset += 20 * dt * (1/60.0)
@@ -59,22 +60,21 @@ class LCDDisplay:
                     if end_idx < len(audio_engine.audio_array):
                         chunk = audio_engine.audio_array[start_idx:end_idx]
                         if len(chunk) == chunk_size:
-                            # Hanning window untuk menghaluskan sinyal
                             windowed = chunk * np.hanning(chunk_size)
                             fft_out = np.abs(np.fft.rfft(windowed))
                             
-                            # Ambil frekuensi yang relevan (buang frekuensi terlalu tinggi/noise)
                             useful_fft = fft_out[1:int(chunk_size/3)]
                             bins = np.array_split(useful_fft, self.num_bars)
                             
                             for i in range(self.num_bars):
                                 val = np.mean(bins[i])
-                                # Skala logaritmik agar gerakan lebih dinamis
                                 norm_val = min(1.0, max(0.0, (np.log10(val + 1) - 4.5) / 3.0))
                                 self.target_bars[i] = norm_val
                                 
+                            # NEW: Extract bass pulse from lowest frequency bin
+                            self.bass_pulse = self.target_bars[0] if self.num_bars > 0 else 0.0
                             use_random = False
-                except Exception as e:
+                except Exception:
                     use_random = True
                     
             if use_random:
@@ -86,14 +86,14 @@ class LCDDisplay:
         else:
             for i in range(self.num_bars):
                 self.target_bars[i] = 0.0
+            self.bass_pulse = max(0.0, self.bass_pulse - 0.05 * dt)
                 
         for i in range(self.num_bars):
             diff = self.target_bars[i] - self.bars[i]
-            # Bergerak lebih responsif jika pakai FFT (tidak pakai animasi turun lambat acak)
             speed = 0.5 if not use_random else 0.3
             self.bars[i] += diff * speed * dt
 
-    def draw(self, surface, title, artist, time_str, is_playing):
+    def draw(self, surface, title, artist, time_str, is_playing, search_query="", lyric_text=None):
         pygame.draw.rect(surface, config.COL_LCD_BG, self.rect, border_radius=4)
         pygame.draw.rect(surface, config.COL_LCD_DIM, self.rect, width=1, border_radius=4)
         
@@ -104,8 +104,15 @@ class LCDDisplay:
         clip_rect = pygame.Rect(self.rect.x + 4, self.rect.y + 4, self.rect.w - 8, self.rect.h - 8)
         surface.set_clip(clip_rect)
         
-        t_surf = config.font_lcd_large.render(title, False, config.COL_LCD_TEXT)
-        a_surf = config.font_lcd_small.render(artist, False, config.COL_LCD_TEXT)
+        # Search mode overrides title/artist display
+        if search_query:
+            t_surf = config.font_lcd_large.render("SEARCH:" + search_query + "_", False, config.COL_LCD_TEXT)
+            a_surf = config.font_lcd_small.render("Esc=cancel Enter=play", False, config.COL_LCD_DIM)
+        else:
+            t_surf = config.font_lcd_large.render(title, False, config.COL_LCD_TEXT)
+            # Show lyric if available, otherwise artist
+            sub_text = lyric_text if lyric_text else artist
+            a_surf = config.font_lcd_small.render(sub_text, False, config.COL_LCD_TEXT)
         
         max_w = clip_rect.w - 60 
         if t_surf.get_width() > max_w:
@@ -156,8 +163,13 @@ class ParticleSystem:
                 p[0] = random.randint(self.rect.x, self.rect.right)
                 p[1] = self.rect.bottom
                 
-    def draw(self, surface):
+    def draw(self, surface, base_color=(255, 255, 255)):
         for p in self.particles:
+            r = max(1, int(p[4]))
+            a = max(0, min(255, int(p[5])))
+            cr = max(0, min(255, int(base_color[0])))
+            cg = max(0, min(255, int(base_color[1])))
+            cb = max(0, min(255, int(base_color[2])))
             temp = pygame.Surface((4, 4), pygame.SRCALPHA)
-            pygame.draw.circle(temp, (255, 255, 255, p[5]), (2, 2), p[4])
+            pygame.draw.circle(temp, (cr, cg, cb, a), (2, 2), r)
             surface.blit(temp, (int(p[0]-2), int(p[1]-2)))
