@@ -6,8 +6,8 @@ pygame.init()
 # =============================================
 WINDOW_WIDTH = 1280
 WINDOW_HEIGHT = 720
-BASE_W = 640
-BASE_H = 360
+BASE_W = 800
+BASE_H = 450
 FPS = 60
 
 # --- Color Palette ---
@@ -31,33 +31,27 @@ COL_LCD_TEXT = (100, 255, 150)
 COL_LCD_DIM = (30, 80, 45)
 
 # --- Fonts ---
-font_title = pygame.font.SysFont("Consolas", 11, bold=True)
-font_artist = pygame.font.SysFont("Consolas", 9)
-font_item = pygame.font.SysFont("Consolas", 9)
-font_item_sm = pygame.font.SysFont("Consolas", 8)
-font_time = pygame.font.SysFont("Consolas", 8)
-font_vol = pygame.font.SysFont("Consolas", 7)
-font_lcd_large = pygame.font.SysFont("Consolas", 12, bold=True)
-font_lcd_small = pygame.font.SysFont("Consolas", 8)
+font_title = pygame.font.SysFont("Consolas", 14, bold=True)
+font_artist = pygame.font.SysFont("Consolas", 10)
+font_item = pygame.font.SysFont("Consolas", 11)
+font_item_sm = pygame.font.SysFont("Consolas", 9)
+font_time = pygame.font.SysFont("Consolas", 10)
+font_vol = pygame.font.SysFont("Consolas", 9)
+font_lcd_large = pygame.font.SysFont("Consolas", 14, bold=True)
+font_lcd_small = pygame.font.SysFont("Consolas", 10)
 
-# --- Coordinates ---
-T_X, T_Y = 15, 10
+# --- Coordinates (Dynamic based on states, these are base sizes) ---
+ALBUM_W = 200
+TRACK_W = 200
+PLAYER_W = 370
+MARGIN = 10
+
+# Original turntable sizes
 T_W, T_H = 370, 340
-TURNTABLE_CX = T_X + 160
-TURNTABLE_CY = T_Y + 148
+TURNTABLE_CX = 160
+TURNTABLE_CY = 148
 
-PL_X = 408
-PL_Y = 18
-PL_W = 214
-PL_H = 332
-PL_ITEM_H = 38
-PL_VIEW_Y = PL_Y + 70
-PL_VIEW_H = PL_H - 100
-
-PROG_X = PL_X + 12
-PROG_Y = PL_Y + PL_H - 16
-PROG_W = PL_W - 24
-PROG_H = 4
+PL_ITEM_H = 45
 
 # --- Events ---
 TRACK_END_EVENT = pygame.USEREVENT + 1

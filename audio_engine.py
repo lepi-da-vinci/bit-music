@@ -29,6 +29,7 @@ class AudioEngine:
         self.playlist = []
         self.track_info = {}       # filepath -> {title, artist, duration, mtime, play_count}
         self.track_vinyl_colors = {}
+        self.albums = {}
         
         self.current_track_index = 0
         self.is_playing = False
@@ -134,6 +135,14 @@ class AudioEngine:
         self.playlist = new_playlist
         self.track_info = new_track_info
         
+        # Build album categories
+        self.albums = {} # album_name -> list of filepaths
+        for fp, info in self.track_info.items():
+            album_name = info.get('album', 'Unknown Album')
+            if album_name not in self.albums:
+                self.albums[album_name] = []
+            self.albums[album_name].append(fp)
+            
         for i in range(len(self.playlist)):
             self.track_vinyl_colors[i] = self.VINYL_NAMES[i % len(self.VINYL_NAMES)]
             
@@ -143,6 +152,7 @@ class AudioEngine:
     def _extract_metadata(self, filepath):
         title = os.path.splitext(os.path.basename(filepath))[0]
         artist = "Unknown Artist"
+        album = "Unknown Album"
         duration = 0
         
         try:
@@ -163,10 +173,12 @@ class AudioEngine:
                     title = tags['title'][0]
                 if 'artist' in tags:
                     artist = tags['artist'][0]
+                if 'album' in tags:
+                    album = tags['album'][0]
             except Exception:
                 pass
                 
-        return {'title': title, 'artist': artist, 'duration': duration}
+        return {'title': title, 'artist': artist, 'album': album, 'duration': duration}
 
     # ============================================================
     #  TRACK INFO

@@ -173,3 +173,50 @@ class ParticleSystem:
             temp = pygame.Surface((4, 4), pygame.SRCALPHA)
             pygame.draw.circle(temp, (cr, cg, cb, a), (2, 2), r)
             surface.blit(temp, (int(p[0]-2), int(p[1]-2)))
+
+class AlbumGrid:
+    def __init__(self, rect):
+        self.rect = rect
+        self.scroll_y = 0
+        self.target_scroll_y = 0
+        
+    def update(self, dt):
+        self.scroll_y += (self.target_scroll_y - self.scroll_y) * 10 * dt
+        
+    def draw(self, surface, albums_dict, hover_album, active_album):
+        # Draw background
+        bg_surf = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
+        pygame.draw.rect(bg_surf, (*config.COL_PANEL_ITEM, 150), (0, 0, self.rect.width, self.rect.height), border_radius=10)
+        surface.blit(bg_surf, self.rect.topleft)
+        
+        # Header
+        surface.blit(config.font_title.render("Albums", True, config.COL_TEXT_YELLOW), (self.rect.x + 15, self.rect.y + 15))
+        
+        # Clip area
+        clip_rect = pygame.Rect(self.rect.x, self.rect.y + 40, self.rect.width, self.rect.height - 40)
+        old_clip = surface.get_clip()
+        surface.set_clip(clip_rect)
+        
+        y_offset = clip_rect.y - self.scroll_y
+        for album_name in albums_dict.keys():
+            if y_offset + 50 > clip_rect.y and y_offset < clip_rect.bottom:
+                item_rect = pygame.Rect(self.rect.x + 10, y_offset, self.rect.width - 20, 50)
+                
+                if album_name == active_album:
+                    pygame.draw.rect(surface, config.COL_PANEL_ACTIVE, item_rect, border_radius=8)
+                    pygame.draw.rect(surface, config.COL_HIGHLIGHT, item_rect, 1, border_radius=8)
+                elif album_name == hover_album:
+                    pygame.draw.rect(surface, config.COL_PANEL_HOVER, item_rect, border_radius=8)
+                
+                # Title
+                title_surf = config.font_item.render(album_name[:20], True, config.COL_TEXT)
+                surface.blit(title_surf, (item_rect.x + 10, item_rect.y + 15))
+                
+                # Count
+                count = len(albums_dict[album_name])
+                count_surf = config.font_item_sm.render(f"{count} tracks", True, config.COL_TEXT_DIM)
+                surface.blit(count_surf, (item_rect.x + 10, item_rect.y + 30))
+                
+            y_offset += 55
+            
+        surface.set_clip(old_clip)

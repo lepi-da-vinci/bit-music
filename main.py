@@ -6,13 +6,13 @@ import random
 import math
 import config
 from audio_engine import AudioEngine
-from ui_elements import Button, VolumeSlider, LCDDisplay, ParticleSystem
+from ui_elements import Button, VolumeSlider, LCDDisplay, ParticleSystem, AlbumGrid
 from turntable import Turntable
 
 class App:
     def __init__(self):
         pygame.init()
-        self.screen = pygame.display.set_mode((config.WINDOW_WIDTH, config.WINDOW_HEIGHT))
+        self.screen = pygame.display.set_mode((config.WINDOW_WIDTH, config.WINDOW_HEIGHT), pygame.RESIZABLE)
         self.display_surface = pygame.Surface((config.BASE_W, config.BASE_H))
         pygame.display.set_caption("Retro Groove Music Player - Ultimate Edition")
         self.clock = pygame.time.Clock()
@@ -22,10 +22,22 @@ class App:
         self.last_interaction_time = time.time()
         self.screensaver_alpha = 255.0
         
-        # Search state
+        # Search & Album state
         self.search_query = ""
         self.is_searching = False
         self.filtered_indices = []
+        
+        self.view_state = 0 # 0: Home, 1: Album, 2: Player
+        self.selected_album = None
+        self.hover_album = None
+        
+        # Panel X positions for animation
+        self.album_x = 300
+        self.target_album_x = 300
+        self.track_x = 800
+        self.target_track_x = 800
+        self.player_x = 800
+        self.target_player_x = 800
         
         # Adaptive theme state
         self.target_bg_color = config.COL_BG
@@ -42,9 +54,7 @@ class App:
         return pygame.Surface((10, 10), pygame.SRCALPHA)
         
     def _load_assets(self):
-        self.img_bg = self._load_img("assets/bg/bg_player.png")
-        self.img_empty_platter = self._load_img("assets/bg/empty_platter.png")
-        self.img_tone_arm = self._load_img("assets/bg/tone_arm.png")
+        # Programmatic Turntable removes the need for static background assets
         
         self.img_start_stop = self._load_img("assets/buttons/btn_start_stop.png")
         self.img_start_stop_active = self._load_img("assets/buttons/btn_start_stop_active.png")
@@ -52,8 +62,6 @@ class App:
         self.img_next = self._load_img("assets/buttons/btn_next.png")
         self.img_shuffle = self._load_img("assets/buttons/btn_shuffle.png")
         self.img_vol_knob = self._load_img("assets/buttons/vol_knob.png")
-        self.img_33 = self._load_img("assets/buttons/btn_33.png")
-        self.img_45 = self._load_img("assets/buttons/btn_45.png")
         
         if os.path.exists("assets/buttons/btn_repeat.png"):
             self.img_repeat = self._load_img("assets/buttons/btn_repeat.png")
@@ -68,18 +76,20 @@ class App:
         self.audio = AudioEngine()
         self.audio.scan_music_folder_async()
         
-        self.turntable = Turntable(self.vinyl_images, self.img_tone_arm)
-        self.particles = ParticleSystem(pygame.Rect(0, 0, config.BASE_W, config.BASE_H), count=40)
-        self.lcd = LCDDisplay(config.PL_X, config.PL_Y, config.PL_W, 45)
+        self.turntable = Turntable(self.vinyl_images)
+        self.particles = ParticleSystem(pygame.Rect(0, 0, config.BASE_W, config.BASE_H), count=60)
         
-        # Buttons — EXACT SAME coordinates as original
-        self.btn_play = Button(pygame.Rect(config.T_X + 22, config.T_Y + 295, 50, 32), self.img_start_stop, self.img_start_stop_active)
-        self.btn_prev = Button(pygame.Rect(config.T_X + 80, config.T_Y + 302, 18, 18), self.img_prev)
-        self.btn_shuffle = Button(pygame.Rect(config.T_X + 104, config.T_Y + 302, 18, 18), self.img_shuffle)
-        self.btn_repeat = Button(pygame.Rect(config.T_X + 128, config.T_Y + 302, 18, 18), self.img_repeat)
-        self.btn_next = Button(pygame.Rect(config.T_X + 152, config.T_Y + 302, 18, 18), self.img_next)
+        self.album_grid = AlbumGrid(pygame.Rect(0, 20, 200, 410))
+        self.lcd = LCDDisplay(0, 20, 200, 45) # Width updated dynamically later
         
-        self.vol_slider = VolumeSlider(config.T_X + 325, config.T_Y + 135, 26, 120, self.img_vol_knob)
+        # Player buttons - coordinates will be relative to Player Panel X
+        self.btn_play = Button(pygame.Rect(22, 350, 50, 32), self.img_start_stop, self.img_start_stop_active)
+        self.btn_prev = Button(pygame.Rect(80, 357, 18, 18), self.img_prev)
+        self.btn_shuffle = Button(pygame.Rect(104, 357, 18, 18), self.img_shuffle)
+        self.btn_repeat = Button(pygame.Rect(128, 357, 18, 18), self.img_repeat)
+        self.btn_next = Button(pygame.Rect(152, 357, 18, 18), self.img_next)
+        
+        self.vol_slider = VolumeSlider(315, 145, 26, 120, self.img_vol_knob)
         
         # Scroll state
         self.dragging_progress = False
@@ -88,17 +98,14 @@ class App:
         self.scroll_velocity = 0.0
         self.playlist_hover_index = -1
         
-        # Try to load album art for initial track
         self._update_album_art_and_theme(self.audio.current_track_index)
 
     def _update_album_art_and_theme(self, idx):
-        """Load album art + update adaptive theme colors for the given track."""
         art, dom_col = self.audio.get_album_art_surface_and_color(idx)
         if self.audio.playlist and 0 <= idx < len(self.audio.playlist):
             fp = self.audio.playlist[idx]
             self.turntable.set_album_art(fp, art)
             if dom_col:
-                # Darken dominant color for background (keep it subtle)
                 self.target_bg_color = (
                     min(50, max(15, int(dom_col[0] * 0.15))),
                     min(55, max(18, int(dom_col[1] * 0.18))),
@@ -110,7 +117,6 @@ class App:
                 self.target_particle_color = (255, 255, 255)
 
     def _change_track(self, change_func, *args):
-        """Helper: capture old vinyl state, call change_func, trigger swap animation."""
         old_idx = self.audio.current_track_index
         old_c = self.audio.track_vinyl_colors.get(old_idx, 'red')
         old_fp = self.audio.playlist[old_idx] if self.audio.playlist else None
@@ -127,6 +133,9 @@ class App:
             new_art = self.turntable.album_art_cache.get(new_fp)
             
             self.turntable.trigger_swap(old_c, new_c, old_art, new_art)
+            
+            # Switch to Player view
+            self.view_state = 2
 
     def _interact(self):
         self.last_interaction_time = time.time()
@@ -138,14 +147,13 @@ class App:
         s = int(seconds) % 60
         return f"{m}:{s:02d}"
 
-    # ================================================================
-    #  EVENT HANDLING
-    # ================================================================
     def _handle_events(self):
         self.raw_mouse = pygame.mouse.get_pos()
-        self.mouse_pos = (self.raw_mouse[0] // 2, self.raw_mouse[1] // 2)
+        scale_x = config.BASE_W / self.screen.get_width()
+        scale_y = config.BASE_H / self.screen.get_height()
+        self.mouse_pos = (int(self.raw_mouse[0] * scale_x), int(self.raw_mouse[1] * scale_y))
         
-        # Update filtered indices for search
+        # Filter indices based on state
         if self.is_searching and self.search_query:
             self.filtered_indices = []
             for i, fp in enumerate(self.audio.playlist):
@@ -154,6 +162,12 @@ class App:
                 a = info.get('artist', '').lower()
                 q = self.search_query.lower()
                 if q in t or q in a:
+                    self.filtered_indices.append(i)
+        elif self.selected_album and self.selected_album in self.audio.albums:
+            self.filtered_indices = []
+            album_fps = self.audio.albums[self.selected_album]
+            for i, fp in enumerate(self.audio.playlist):
+                if fp in album_fps:
                     self.filtered_indices.append(i)
         else:
             self.filtered_indices = list(range(len(self.audio.playlist)))
@@ -165,7 +179,6 @@ class App:
             elif event.type == config.TRACK_END_EVENT:
                 if self.audio.is_playing:
                     if self.audio.repeat_mode == 0 and self.audio.current_track_index == len(self.audio.playlist) - 1:
-                        # Auto-DJ: instead of stopping, play a random track
                         next_idx = random.randint(0, len(self.audio.playlist) - 1)
                         self._change_track(self.audio.play_track, next_idx)
                     else:
@@ -198,61 +211,68 @@ class App:
                         if self.filtered_indices:
                             self._change_track(self.audio.play_track, self.filtered_indices[0])
                         self.is_searching = False
-                        self.search_query = ""
-                    elif event.unicode.isprintable():
-                        self.search_query += event.unicode
+                    else:
+                        if event.unicode.isprintable():
+                            self.search_query += event.unicode
                 else:
                     if event.key == pygame.K_SPACE:
-                        if not self.audio.is_playing and self.audio.playlist:
-                            self._update_album_art_and_theme(self.audio.current_track_index)
-                        self.audio.toggle_play_pause()
+                        self._change_track(self.audio.toggle_play_pause)
                     elif event.key == pygame.K_RIGHT:
                         self._change_track(self.audio.play_next)
                     elif event.key == pygame.K_LEFT:
                         self._change_track(self.audio.play_prev)
-                    elif event.key == pygame.K_UP:
-                        self.audio.set_volume(self.audio.volume + 0.05)
-                    elif event.key == pygame.K_DOWN:
-                        self.audio.set_volume(self.audio.volume - 0.05)
                     elif event.key == pygame.K_r:
                         self.audio.cycle_repeat()
                     elif event.key == pygame.K_s:
                         self.audio.toggle_shuffle()
+                    elif event.key == pygame.K_ESCAPE:
+                        if self.view_state > 0:
+                            self.view_state -= 1
                     elif event.key == pygame.K_SLASH or (event.key == pygame.K_f and (pygame.key.get_mods() & pygame.KMOD_CTRL)):
-                        # Type-to-search: only trigger on '/' or Ctrl+F
                         self.is_searching = True
                         self.search_query = ""
+                        self.view_state = max(self.view_state, 1)
                     
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 self._interact()
                 if event.button == 1:
-                    # Cancel search if clicking anywhere
                     if self.is_searching:
                         self.is_searching = False
                         self.search_query = ""
                         
                     pos = self.mouse_pos
                     
-                    # Progress Bar
-                    if config.PROG_X - 5 <= pos[0] <= config.PROG_X + config.PROG_W + 5 and config.PROG_Y - 10 <= pos[1] <= config.PROG_Y + config.PROG_H + 10:
-                        if self.audio.playlist and self.audio.is_playing:
-                            self.dragging_progress = True
-                            _, _, dur = self.audio.get_track_info()
-                            if dur > 0:
-                                rel_x = max(0, min(pos[0] - config.PROG_X, config.PROG_W))
-                                self.audio.seek((rel_x / config.PROG_W) * dur)
+                    # Handle Albums click
+                    if self.album_grid.rect.collidepoint(pos):
+                        y_offset = self.album_grid.rect.y + 40 - self.album_grid.scroll_y
+                        for album_name in self.audio.albums.keys():
+                            if y_offset + 50 > self.album_grid.rect.y + 40 and y_offset < self.album_grid.rect.bottom:
+                                item_rect = pygame.Rect(self.album_grid.rect.x + 10, y_offset, self.album_grid.rect.width - 20, 50)
+                                if item_rect.collidepoint(pos):
+                                    self.selected_album = album_name
+                                    self.view_state = max(self.view_state, 1)
+                                    self.playlist_scroll_offset = 0
+                                    self.scroll_target = 0
+                            y_offset += 55
+
+                    # Handle Track click
+                    track_rect = pygame.Rect(self.track_x, 20, config.TRACK_W, 410)
+                    if track_rect.collidepoint(pos):
+                        pl_view_y = 20 + 70
+                        pl_view_h = 410 - 90
+                        if self.track_x <= pos[0] <= self.track_x + config.TRACK_W and pl_view_y <= pos[1] <= pl_view_y + pl_view_h:
+                            rel_y = pos[1] - pl_view_y + self.playlist_scroll_offset
+                            idx = int(rel_y // config.PL_ITEM_H)
+                            if 0 <= idx < len(self.filtered_indices):
+                                real_idx = self.filtered_indices[idx]
+                                self._change_track(self.audio.play_track, real_idx)
                                 
-                    # Volume
-                    elif self.vol_slider.rect.collidepoint(pos):
-                        self.vol_slider.is_dragging = True
-                        self.audio.set_volume(1.0 - max(0.0, min(1.0, (pos[1] - self.vol_slider.rect.y) / self.vol_slider.rect.h)))
-                        
-                    # Buttons
-                    elif self.btn_play.rect.collidepoint(pos):
+                    # Handle Player buttons
+                    pb_x = self.player_x
+                    pb_y = 20
+                    if self.btn_play.rect.collidepoint(pos):
                         self.btn_play.is_pressed = True
-                        if not self.audio.is_playing and self.audio.playlist:
-                            self._update_album_art_and_theme(self.audio.current_track_index)
-                        self.audio.toggle_play_pause()
+                        self._change_track(self.audio.toggle_play_pause)
                     elif self.btn_prev.rect.collidepoint(pos):
                         self.btn_prev.is_pressed = True
                         self._change_track(self.audio.play_prev)
@@ -265,223 +285,264 @@ class App:
                     elif self.btn_repeat.rect.collidepoint(pos):
                         self.btn_repeat.is_pressed = True
                         self.audio.cycle_repeat()
+                    elif self.vol_slider.rect.collidepoint(pos):
+                        self.vol_slider.is_dragging = True
                         
-                    # Playlist click
-                    elif config.PL_X <= pos[0] <= config.PL_X + config.PL_W and config.PL_VIEW_Y <= pos[1] <= config.PL_VIEW_Y + config.PL_VIEW_H:
-                        rel_y = pos[1] - config.PL_VIEW_Y + self.playlist_scroll_offset
-                        idx = int(rel_y // config.PL_ITEM_H)
-                        if 0 <= idx < len(self.filtered_indices):
-                            real_idx = self.filtered_indices[idx]
-                            self._change_track(self.audio.play_track, real_idx)
-                        
+                    # Progress Bar
+                    prog_rect = pygame.Rect(self.track_x + 12, 20 + 410 - 16, config.TRACK_W - 24, 8)
+                    if prog_rect.collidepoint(pos):
+                        self.dragging_progress = True
+                        pct = max(0.0, min(1.0, (pos[0] - prog_rect.x) / prog_rect.w))
+                        new_pos = pct * self.audio.get_track_info()[2]
+                        if new_pos > 0:
+                            pygame.mixer.music.set_pos(new_pos)
+                            self.audio.playback_offset = new_pos
+                            
                 # Scroll
                 if event.button == 4:
-                    self.scroll_velocity -= 40
+                    if self.mouse_pos[0] < self.track_x:
+                        self.album_grid.target_scroll_y -= 40
+                    else:
+                        self.scroll_velocity -= 40
                 elif event.button == 5:
-                    self.scroll_velocity += 40
+                    if self.mouse_pos[0] < self.track_x:
+                        self.album_grid.target_scroll_y += 40
+                    else:
+                        self.scroll_velocity += 40
                     
             elif event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1:
                     self.dragging_progress = False
                     self.vol_slider.is_dragging = False
-                    for btn in [self.btn_play, self.btn_prev, self.btn_next, self.btn_shuffle, self.btn_repeat]:
-                        btn.is_pressed = False
-                        
-            elif event.type == pygame.MOUSEMOTION:
-                self._interact()
-                if self.vol_slider.is_dragging:
-                    self.audio.set_volume(1.0 - max(0.0, min(1.0, (self.mouse_pos[1] - self.vol_slider.rect.y) / self.vol_slider.rect.h)))
-                if self.dragging_progress and self.audio.playlist and self.audio.is_playing:
-                    _, _, dur = self.audio.get_track_info()
-                    if dur > 0:
-                        rel_x = max(0, min(self.mouse_pos[0] - config.PROG_X, config.PROG_W))
-                        self.audio.seek((rel_x / config.PROG_W) * dur)
+                    self.btn_play.is_pressed = False
+                    self.btn_prev.is_pressed = False
+                    self.btn_next.is_pressed = False
+                    self.btn_shuffle.is_pressed = False
+                    self.btn_repeat.is_pressed = False
 
-    # ================================================================
-    #  UPDATE
-    # ================================================================
-    def _update(self, dt):
-        # Adaptive theme color interpolation
+    def _update_logic(self, dt):
+        self.album_x = 10
+        
+        if self.view_state == 0:
+            self.track_x = config.BASE_W + 50
+            self.player_x = config.BASE_W + 50
+        elif self.view_state == 1:
+            self.track_x = 220
+            self.player_x = config.BASE_W + 50
+        elif self.view_state == 2:
+            self.track_x = 220
+            self.player_x = 430
+        
+        self.album_grid.rect.x = int(self.album_x)
+        self.album_grid.update(dt)
+
         for i in range(3):
-            self.current_bg_color[i] += (self.target_bg_color[i] - self.current_bg_color[i]) * 0.02 * dt
-            self.current_particle_color[i] += (self.target_particle_color[i] - self.current_particle_color[i]) * 0.02 * dt
-        
-        # Screensaver fade
-        idle_time = time.time() - self.last_interaction_time
-        if idle_time > 30:
-            self.screensaver_alpha = max(0.0, self.screensaver_alpha - 3.0 * dt)
-        else:
-            self.screensaver_alpha = min(255.0, self.screensaver_alpha + 15.0 * dt)
-        
-        # Momentum scrolling
-        if self.audio.playlist:
-            th = len(self.filtered_indices) * config.PL_ITEM_H
-            max_scroll = max(0, th - config.PL_VIEW_H)
-            self.scroll_velocity *= 0.85
-            self.scroll_target += self.scroll_velocity * dt
-            self.scroll_target = max(0, min(self.scroll_target, max_scroll))
-            diff = self.scroll_target - self.playlist_scroll_offset
-            if abs(diff) > 0.5:
-                self.playlist_scroll_offset += diff * 0.2 * dt
-            else:
-                self.playlist_scroll_offset = self.scroll_target
-
-        _, _, dur = self.audio.get_track_info()
-        progress_ratio = min(1.0, self.audio.get_playback_pos() / dur) if dur > 0 else 0
-        
-        self.turntable.update(dt, self.audio.is_playing, progress_ratio)
+            self.current_bg_color[i] += (self.target_bg_color[i] - self.current_bg_color[i]) * 2 * dt
+            self.current_particle_color[i] += (self.target_particle_color[i] - self.current_particle_color[i]) * 2 * dt
+            
         self.particles.update(dt)
-        self.lcd.update(dt, self.audio.is_playing, audio_engine=self.audio)
         
+        pct = 0.0
+        _, _, tot = self.audio.get_track_info()
+        if tot > 0:
+            pct = self.audio.get_playback_pos() / tot
+            pct = max(0.0, min(1.0, pct))
+            
+        self.turntable.update(dt, self.audio.is_playing, pct)
+        
+        # Hover handling
+        pos = self.mouse_pos
+        self.hover_album = None
+        if self.album_grid.rect.collidepoint(pos):
+            y_offset = self.album_grid.rect.y + 40 - self.album_grid.scroll_y
+            for album_name in self.audio.albums.keys():
+                if y_offset + 50 > self.album_grid.rect.y + 40 and y_offset < self.album_grid.rect.bottom:
+                    item_rect = pygame.Rect(self.album_grid.rect.x + 10, y_offset, self.album_grid.rect.width - 20, 50)
+                    if item_rect.collidepoint(pos):
+                        self.hover_album = album_name
+                y_offset += 55
+                
         self.playlist_hover_index = -1
-        if config.PL_X <= self.mouse_pos[0] <= config.PL_X + config.PL_W and config.PL_VIEW_Y <= self.mouse_pos[1] <= config.PL_VIEW_Y + config.PL_VIEW_H:
-            rel_y = self.mouse_pos[1] - config.PL_VIEW_Y + self.playlist_scroll_offset
+        track_rect = pygame.Rect(self.track_x, 20, config.TRACK_W, 410)
+        pl_view_y = 90
+        pl_view_h = 320
+        if track_rect.collidepoint(pos) and pl_view_y <= pos[1] <= pl_view_y + pl_view_h:
+            rel_y = pos[1] - pl_view_y + self.playlist_scroll_offset
             h_idx = int(rel_y // config.PL_ITEM_H)
             if 0 <= h_idx < len(self.filtered_indices):
                 self.playlist_hover_index = h_idx
+                
+        # Scroll physics
+        self.scroll_velocity *= 0.85
+        self.scroll_target += self.scroll_velocity * dt
+        max_scroll = max(0, len(self.filtered_indices) * config.PL_ITEM_H - pl_view_h)
+        self.scroll_target = max(0.0, min(float(max_scroll), self.scroll_target))
+        self.playlist_scroll_offset += (self.scroll_target - self.playlist_scroll_offset) * 15 * dt
 
-    # ================================================================
-    #  RENDER
-    # ================================================================
+        # Screensaver
+        if self.audio.is_playing:
+            idle_time = time.time() - self.last_interaction_time
+            if idle_time > 30.0:
+                self.screensaver_alpha = max(0.0, self.screensaver_alpha - 50 * dt)
+            else:
+                self.screensaver_alpha = min(255.0, self.screensaver_alpha + 200 * dt)
+        else:
+            self.screensaver_alpha = 255.0
+
     def _render(self):
-        # Background with adaptive color
-        self.display_surface.fill(tuple(int(c) for c in self.current_bg_color))
-        self.display_surface.blit(self.img_bg, (0, 0))
-        self.particles.draw(self.display_surface, base_color=tuple(int(c) for c in self.current_particle_color))
+        ui_surface = self.display_surface
+        ui_surface.fill(tuple(int(c) for c in self.current_bg_color))
         
-        # Platter & Turntable
-        platter_rect = self.img_empty_platter.get_rect(center=self.turntable.vinyl_center)
-        self.display_surface.blit(self.img_empty_platter, platter_rect.topleft)
+        # The dynamic color fill is sufficient for the background
         
-        curr_color = self.audio.track_vinyl_colors.get(self.audio.current_track_index, 'red')
-        is_busy = pygame.mixer.music.get_busy() and len(self.audio.playlist) > 0
-        self.turntable.draw(self.display_surface, curr_color, self.audio.is_playing, is_busy, bass_pulse=self.lcd.bass_pulse)
+        p_col = tuple(int(c) for c in self.current_particle_color)
+        self.particles.draw(ui_surface, p_col)
         
-        # --- UI Layer (affected by screensaver fade) ---
-        ui_surface = pygame.Surface((config.BASE_W, config.BASE_H), pygame.SRCALPHA)
+        # 1. Draw Album Grid
+        self.album_grid.draw(ui_surface, self.audio.albums, self.hover_album, self.selected_album)
         
-        self.vol_slider.draw(ui_surface, self.audio.volume)
+        # 2. Draw Track Panel
+        tx = int(self.track_x)
+        ty = 20
+        tw = config.TRACK_W
+        th = 410
         
-        self.btn_play.draw(ui_surface, self.audio.is_playing)
-        self.btn_prev.draw(ui_surface)
-        self.btn_next.draw(ui_surface)
-        self.btn_shuffle.draw(ui_surface)
-        self.btn_repeat.draw(ui_surface)
+        bg_tracks = pygame.Surface((tw, th), pygame.SRCALPHA)
+        pygame.draw.rect(bg_tracks, (*config.COL_PANEL_ITEM, 150), (0, 0, tw, th), border_radius=10)
+        ui_surface.blit(bg_tracks, (tx, ty))
         
-        ui_surface.blit(self.img_33, (config.T_X + 268, config.T_Y + 308))
-        ui_surface.blit(self.img_45, (config.T_X + 298, config.T_Y + 308))
-        
-        if self.audio.is_shuffled:
-            pygame.draw.rect(ui_surface, config.COL_TEXT_GREEN, (self.btn_shuffle.rect.x + 5, self.btn_shuffle.rect.bottom + 2, 8, 2))
-        if self.audio.repeat_mode == 1:
-            pygame.draw.rect(ui_surface, config.COL_ACCENT_BLUE, (self.btn_repeat.rect.x + 5, self.btn_repeat.rect.bottom + 2, 8, 2))
-        elif self.audio.repeat_mode == 2:
-            pygame.draw.rect(ui_surface, config.COL_TEXT_YELLOW, (self.btn_repeat.rect.x + 5, self.btn_repeat.rect.bottom + 2, 8, 2))
-            one_surf = config.font_vol.render("1", False, config.COL_TEXT_YELLOW)
-            ui_surface.blit(one_surf, (self.btn_repeat.rect.x + 6, self.btn_repeat.rect.y - 8))
-            
-        # LCD Display with lyrics & search
+        self.lcd.rect.x = tx + 7
+        self.lcd.rect.y = ty + 7
+        self.lcd.rect.width = tw - 14
         t_title, t_artist, _ = self.audio.get_track_info()
         time_str = self._format_time(self.audio.get_playback_pos())
         lyric = self.audio.get_current_lyric()
         self.lcd.draw(ui_surface, t_title, t_artist, time_str, self.audio.is_playing,
                       search_query=self.search_query if self.is_searching else "",
                       lyric_text=lyric)
-
-        # Playlist Panel
-        clip_rect = pygame.Rect(config.PL_X, config.PL_VIEW_Y, config.PL_W, config.PL_VIEW_H)
+                      
+        pl_view_y = ty + 70
+        pl_view_h = th - 90
+        clip_rect = pygame.Rect(tx, pl_view_y, tw, pl_view_h)
+        old_clip = ui_surface.get_clip()
         ui_surface.set_clip(clip_rect)
         
-        if self.audio.is_scanning and not self.audio.playlist:
-            loading = config.font_item.render("Loading...", False, config.COL_TEXT_DIM)
-            ui_surface.blit(loading, (config.PL_X + 20, config.PL_VIEW_Y + 20))
-        
+        is_busy = pygame.mixer.music.get_busy()
         for list_i, real_idx in enumerate(self.filtered_indices):
-            item_y = config.PL_VIEW_Y + list_i * config.PL_ITEM_H - self.playlist_scroll_offset
-            if item_y + config.PL_ITEM_H < config.PL_VIEW_Y or item_y > config.PL_VIEW_Y + config.PL_VIEW_H:
+            item_y = pl_view_y + list_i * config.PL_ITEM_H - self.playlist_scroll_offset
+            if item_y + config.PL_ITEM_H < pl_view_y or item_y > pl_view_y + pl_view_h:
                 continue
                 
-            irect = pygame.Rect(config.PL_X, item_y, config.PL_W, config.PL_ITEM_H - 2)
+            irect = pygame.Rect(tx + 5, item_y, tw - 10, config.PL_ITEM_H - 4)
             
             if real_idx == self.audio.current_track_index and is_busy:
-                pygame.draw.rect(ui_surface, config.COL_PANEL_ACTIVE, irect)
-                pygame.draw.rect(ui_surface, config.COL_HIGHLIGHT, (irect.x, irect.y, 2, irect.h))
+                pygame.draw.rect(ui_surface, config.COL_PANEL_ACTIVE, irect, border_radius=5)
+                pygame.draw.rect(ui_surface, config.COL_HIGHLIGHT, (irect.x, irect.y, 4, irect.h), border_radius=5)
             elif list_i == self.playlist_hover_index:
-                pygame.draw.rect(ui_surface, config.COL_PANEL_HOVER, irect)
-            else:
-                pygame.draw.rect(ui_surface, config.COL_PANEL_ITEM, irect)
+                pygame.draw.rect(ui_surface, config.COL_PANEL_HOVER, irect, border_radius=5)
                 
-            v_col_name = self.audio.track_vinyl_colors.get(real_idx, 'red')
-            v_map = {'red': (225,65,85), 'blue': (50,120,210), 'green': (60,180,80),
-                     'purple': (150,60,180), 'orange': (240,140,40), 'teal': (40,170,160)}
-            pygame.draw.rect(ui_surface, v_map.get(v_col_name, (200,200,200)), (irect.x + 6, irect.y + 6, 6, 6))
-            
-            p_title, p_artist, p_dur = self.audio.get_track_info(real_idx)
-            
-            # Play count / favorite coloring
             fp = self.audio.playlist[real_idx]
-            play_count = self.audio.track_info.get(fp, {}).get('play_count', 0)
+            info = self.audio.track_info.get(fp, {})
+            p_title = info.get('title', 'Unknown')
+            p_artist = info.get('artist', 'Unknown Artist')
+            p_dur = info.get('duration', 0)
+            play_count = info.get('play_count', 0)
             
-            if real_idx == self.audio.current_track_index:
-                col_t = config.COL_TEXT_YELLOW
-            elif play_count > 3:
-                col_t = config.COL_GOLD  # Favorite
-            else:
-                col_t = config.COL_TEXT
+            col_t = config.COL_GOLD if play_count >= 3 else config.COL_TEXT
+            v_col = self.audio.track_vinyl_colors.get(real_idx, 'red')
+            v_col_rgb = {'red': (255, 80, 100), 'blue': (80, 150, 255), 'green': (80, 220, 100),
+                         'purple': (180, 80, 220), 'orange': (255, 170, 60), 'teal': (60, 200, 180)}
+            pygame.draw.rect(ui_surface, v_col_rgb.get(v_col, (255, 255, 255)), (irect.x + 5, irect.y + 10, 6, 6))
             
-            ui_surface.blit(config.font_item.render(p_title[:22], False, col_t), (irect.x + 16, irect.y + 3))
-            ui_surface.blit(config.font_item_sm.render(p_artist[:28], False, config.COL_TEXT_DIM), (irect.x + 16, irect.y + 14))
-            if p_dur > 0:
-                dur_surf = config.font_item_sm.render(self._format_time(p_dur), False, config.COL_TEXT_DIM)
-                ui_surface.blit(dur_surf, (irect.right - dur_surf.get_width() - 6, irect.y + 3))
-                
-        ui_surface.set_clip(None)
-        
-        # Progress Bar
-        _, _, dur = self.audio.get_track_info()
-        progress_ratio = min(1.0, self.audio.get_playback_pos() / dur) if dur > 0 else 0
-        pygame.draw.rect(ui_surface, config.COL_PROGRESS_BG, (config.PROG_X, config.PROG_Y, config.PROG_W, config.PROG_H), border_radius=2)
-        if progress_ratio > 0:
-            fill_w = max(1, int(config.PROG_W * progress_ratio))
-            pygame.draw.rect(ui_surface, config.COL_PROGRESS_FILL, (config.PROG_X, config.PROG_Y, fill_w, config.PROG_H), border_radius=2)
-            thumb_x = config.PROG_X + fill_w - 3
-            pygame.draw.rect(ui_surface, (255, 255, 255), (thumb_x, config.PROG_Y - 2, 5, config.PROG_H + 4), border_radius=1)
+            ui_surface.blit(config.font_item.render(p_title[:22], True, col_t), (irect.x + 16, irect.y + 5))
+            ui_surface.blit(config.font_artist.render(p_artist[:25], True, config.COL_TEXT_DIM), (irect.x + 16, irect.y + 18))
+            dur_str = self._format_time(p_dur)
+            ui_surface.blit(config.font_time.render(dur_str, True, config.COL_TEXT_DIM), (irect.right - 30, irect.y + 5))
             
-        t_cur_surf = config.font_time.render(time_str, False, config.COL_TEXT_DIM)
-        t_dur_surf = config.font_time.render(self._format_time(dur), False, config.COL_TEXT_DIM)
-        ui_surface.blit(t_cur_surf, (config.PROG_X, config.PROG_Y - 11))
-        ui_surface.blit(t_dur_surf, (config.PROG_X + config.PROG_W - t_dur_surf.get_width(), config.PROG_Y - 11))
+        ui_surface.set_clip(old_clip)
+        # Progress bar moved to player panel
+            
+        # 3. Draw Player Panel
+        px = int(self.player_x)
+        py = 20
+        pw = config.PLAYER_W
+        ph = 410
         
-        # Scrollbar
-        if self.audio.playlist:
-            th = len(self.filtered_indices) * config.PL_ITEM_H
-            max_scroll = max(0, th - config.PL_VIEW_H)
-            if max_scroll > 0:
-                sh = max(12, int(config.PL_VIEW_H * (config.PL_VIEW_H / th)))
-                sy = config.PL_VIEW_Y + int((config.PL_VIEW_H - sh) * (self.playlist_scroll_offset / max_scroll))
-                pygame.draw.rect(ui_surface, (30, 34, 42), (config.PL_X + config.PL_W - 5, config.PL_VIEW_Y, 3, config.PL_VIEW_H), border_radius=1)
-                pygame.draw.rect(ui_surface, (90, 95, 110), (config.PL_X + config.PL_W - 5, sy, 3, sh), border_radius=1)
+        # Programmatic Turntable Base (Sleek dark metallic style)
+        bg_player = pygame.Surface((pw, ph), pygame.SRCALPHA)
+        pygame.draw.rect(bg_player, (35, 38, 43, 255), (0, 0, pw, ph), border_radius=12)
+        # Inner bezel
+        pygame.draw.rect(bg_player, (50, 53, 58, 255), (2, 2, pw - 4, ph - 4), width=1, border_radius=11)
+        ui_surface.blit(bg_player, (px, py))
         
-        # Screensaver: fade UI layer
-        if self.screensaver_alpha < 255:
-            ui_surface.set_alpha(int(self.screensaver_alpha))
-        self.display_surface.blit(ui_surface, (0, 0))
+        vol_pct = self.audio.volume
+        bass_pulse = 0.0
+        if is_busy and self.audio.is_playing:
+            bass_pulse = max(0, min(1, 0.5 + 0.5 * math.sin(time.time() * 12))) * vol_pct
+            
+        self.turntable.draw(ui_surface, self.audio.track_vinyl_colors.get(self.audio.current_track_index, 'red'),
+                            self.audio.is_playing, is_busy, bass_pulse, offset_x=px, offset_y=py)
+        # Progress Bar on Player Panel
+        prog_rect = pygame.Rect(px + 30, py + 370, pw - 60, 6)
+        pygame.draw.rect(ui_surface, config.COL_PROGRESS_BG, prog_rect, border_radius=3)
+        pct = 0.0
+        _, _, tot = self.audio.get_track_info()
+        if tot > 0:
+            pct = self.audio.get_playback_pos() / tot
+            pct = max(0.0, min(1.0, pct))
+        f_rect = pygame.Rect(prog_rect.x, prog_rect.y, int(prog_rect.w * pct), prog_rect.h)
+        if f_rect.w > 0:
+            pygame.draw.rect(ui_surface, config.COL_PROGRESS_FILL, f_rect, border_radius=3)
+            # Draw a tiny knob at the end of the progress bar
+            pygame.draw.circle(ui_surface, config.COL_HIGHLIGHT, (f_rect.right, f_rect.centery), 5)
+                            
+        # Draw buttons (Original layout: T_X=15, T_Y=10)
+        self.btn_play.rect.x = px + 37
+        self.btn_play.rect.y = py + 305
+        self.btn_play.draw(ui_surface)
         
-        # UPSCALE
-        scaled_screen = pygame.transform.scale(self.display_surface, (config.WINDOW_WIDTH, config.WINDOW_HEIGHT))
+        self.btn_prev.rect.x = px + 95
+        self.btn_prev.rect.y = py + 312
+        self.btn_prev.draw(ui_surface)
+        
+        self.btn_shuffle.rect.x = px + 119
+        self.btn_shuffle.rect.y = py + 312
+        self.btn_shuffle.draw(ui_surface, active=self.audio.is_shuffled)
+        
+        self.btn_repeat.rect.x = px + 143
+        self.btn_repeat.rect.y = py + 312
+        self.btn_repeat.draw(ui_surface, active=(self.audio.repeat_mode > 0))
+        
+        self.btn_next.rect.x = px + 167
+        self.btn_next.rect.y = py + 312
+        self.btn_next.draw(ui_surface)
+        
+        self.vol_slider.rect.x = px + 340
+        self.vol_slider.rect.y = py + 145
+        self.vol_slider.draw(ui_surface, self.audio.volume)
+        
+        # Handle volume dragging
+        if self.vol_slider.is_dragging:
+            rel_y = self.mouse_pos[1] - self.vol_slider.rect.y
+            pct = 1.0 - max(0.0, min(1.0, rel_y / self.vol_slider.rect.height))
+            self.audio.set_volume(pct)
+        
+        # Global alpha overlay for screensaver
+        if self.screensaver_alpha < 255.0:
+            overlay = pygame.Surface((config.BASE_W, config.BASE_H), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, int(255 - self.screensaver_alpha)))
+            ui_surface.blit(overlay, (0, 0))
+            
+        scaled_screen = pygame.transform.smoothscale(self.display_surface, self.screen.get_size())
         self.screen.blit(scaled_screen, (0, 0))
         pygame.display.flip()
 
-    # ================================================================
-    #  MAIN LOOP
-    # ================================================================
     def run(self):
         while self.running:
-            dt = max(self.clock.get_time(), 1) / 16.67
+            dt = self.clock.tick(config.FPS) / 1000.0
             self._handle_events()
-            self._update(dt)
+            self._update_logic(dt)
             self._render()
-            self.clock.tick(config.FPS)
         pygame.quit()
 
 if __name__ == "__main__":
