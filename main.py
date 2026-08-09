@@ -73,7 +73,7 @@ class App:
         self.lcd = LCDDisplay(config.PL_X, config.PL_Y, config.PL_W, 45)
         
         # Buttons — EXACT SAME coordinates as original
-        self.btn_play = Button(pygame.Rect(config.T_X + 15, config.T_Y + 295, 50, 32), self.img_start_stop, self.img_start_stop_active)
+        self.btn_play = Button(pygame.Rect(config.T_X + 22, config.T_Y + 295, 50, 32), self.img_start_stop, self.img_start_stop_active)
         self.btn_prev = Button(pygame.Rect(config.T_X + 80, config.T_Y + 302, 18, 18), self.img_prev)
         self.btn_shuffle = Button(pygame.Rect(config.T_X + 104, config.T_Y + 302, 18, 18), self.img_shuffle)
         self.btn_repeat = Button(pygame.Rect(config.T_X + 128, config.T_Y + 302, 18, 18), self.img_repeat)
