@@ -42,22 +42,56 @@ class LCDDisplay:
         self.bars = [0.0] * self.num_bars
         self.target_bars = [0.0] * self.num_bars
         
-    def update(self, dt, is_playing):
+    def update(self, dt, is_playing, audio_engine=None):
         self.marquee_offset += 20 * dt * (1/60.0)
+        use_random = True
         
         if is_playing:
-            for i in range(self.num_bars):
-                if random.random() < 0.2:
-                    self.target_bars[i] = random.uniform(0.2, 1.0)
-                else:
-                    self.target_bars[i] = max(0.0, self.target_bars[i] - 0.05 * dt)
+            if audio_engine and audio_engine.audio_array is not None:
+                try:
+                    import numpy as np
+                    curr_time = audio_engine.get_playback_pos()
+                    sample_rate = audio_engine.sample_rate
+                    chunk_size = 1024
+                    start_idx = int(curr_time * sample_rate)
+                    end_idx = start_idx + chunk_size
+                    
+                    if end_idx < len(audio_engine.audio_array):
+                        chunk = audio_engine.audio_array[start_idx:end_idx]
+                        if len(chunk) == chunk_size:
+                            # Hanning window untuk menghaluskan sinyal
+                            windowed = chunk * np.hanning(chunk_size)
+                            fft_out = np.abs(np.fft.rfft(windowed))
+                            
+                            # Ambil frekuensi yang relevan (buang frekuensi terlalu tinggi/noise)
+                            useful_fft = fft_out[1:int(chunk_size/3)]
+                            bins = np.array_split(useful_fft, self.num_bars)
+                            
+                            for i in range(self.num_bars):
+                                val = np.mean(bins[i])
+                                # Skala logaritmik agar gerakan lebih dinamis
+                                norm_val = min(1.0, max(0.0, (np.log10(val + 1) - 4.5) / 3.0))
+                                self.target_bars[i] = norm_val
+                                
+                            use_random = False
+                except Exception as e:
+                    use_random = True
+                    
+            if use_random:
+                for i in range(self.num_bars):
+                    if random.random() < 0.2:
+                        self.target_bars[i] = random.uniform(0.2, 1.0)
+                    else:
+                        self.target_bars[i] = max(0.0, self.target_bars[i] - 0.05 * dt)
         else:
             for i in range(self.num_bars):
                 self.target_bars[i] = 0.0
                 
         for i in range(self.num_bars):
             diff = self.target_bars[i] - self.bars[i]
-            self.bars[i] += diff * 0.3 * dt
+            # Bergerak lebih responsif jika pakai FFT (tidak pakai animasi turun lambat acak)
+            speed = 0.5 if not use_random else 0.3
+            self.bars[i] += diff * speed * dt
 
     def draw(self, surface, title, artist, time_str, is_playing):
         pygame.draw.rect(surface, config.COL_LCD_BG, self.rect, border_radius=4)

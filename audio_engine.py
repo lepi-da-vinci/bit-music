@@ -6,6 +6,13 @@ from mutagen.easyid3 import EasyID3
 from mutagen import File
 import config
 
+try:
+    import numpy as np
+    NUMPY_AVAILABLE = True
+except ImportError:
+    NUMPY_AVAILABLE = False
+    print("Numpy not found. FFT audio visualizer will fall back to random animation.")
+
 class AudioEngine:
     def __init__(self):
         pygame.mixer.init()
@@ -21,6 +28,10 @@ class AudioEngine:
         self.repeat_mode = 0  # 0=Off, 1=All, 2=One
         self.volume = 0.7
         self.playback_offset = 0.0
+        
+        # Array audio untuk FFT
+        self.audio_array = None
+        self.sample_rate = 44100
         
         pygame.mixer.music.set_volume(self.volume)
         
@@ -77,15 +88,45 @@ class AudioEngine:
         dur = self.track_durations.get(filepath, 0)
         return title, artist, dur
         
+    def _extract_audio_array(self, filepath):
+        self.audio_array = None
+        if not NUMPY_AVAILABLE:
+            return
+        
+        try:
+            # Muat file ke memori untuk diekstrak array-nya
+            # (Hanya direkomendasikan untuk file yang muat di RAM)
+            snd = pygame.mixer.Sound(filepath)
+            arr = pygame.sndarray.array(snd)
+            
+            # Jika stereo (2 channel), ambil rata-rata atau channel kiri
+            if len(arr.shape) > 1 and arr.shape[1] > 0:
+                arr = arr[:, 0]
+                
+            self.audio_array = arr
+            # Ambil sample rate aktual dari mixer
+            init_info = pygame.mixer.get_init()
+            if init_info:
+                self.sample_rate = init_info[0]
+                
+        except Exception as e:
+            print(f"Gagal mengekstrak audio array untuk {filepath}: {e}")
+            self.audio_array = None
+
     def load_and_play(self, skip_count=0):
         if not self.playlist or skip_count >= len(self.playlist):
             self.is_playing = False
             return False
         try:
-            pygame.mixer.music.load(self.playlist[self.current_track_index])
+            filepath = self.playlist[self.current_track_index]
+            pygame.mixer.music.load(filepath)
             pygame.mixer.music.play()
             self.playback_offset = 0.0
             self.is_playing = True
+            
+            # Ekstrak array untuk visualizer
+            self._extract_audio_array(filepath)
+            
             return True
         except Exception as e:
             print(f"Error playing track: {e}")

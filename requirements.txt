@@ -1,2 +1,2 @@
-pygame==2.6.1
-mutagen==1.47.0
+mutagen
+numpy

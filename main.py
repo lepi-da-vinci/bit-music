@@ -218,7 +218,7 @@ while running:
     
     turntable.update(dt, audio.is_playing, progress_ratio)
     particles.update(dt)
-    lcd.update(dt, audio.is_playing)
+    lcd.update(dt, audio.is_playing, audio_engine=audio)
     
     playlist_hover_index = -1
     if config.PL_X <= mouse_pos[0] <= config.PL_X + config.PL_W and config.PL_VIEW_Y <= mouse_pos[1] <= config.PL_VIEW_Y + config.PL_VIEW_H:
