@@ -4,6 +4,7 @@ import math
 import random
 from mutagen.mp3 import MP3
 from mutagen.easyid3 import EasyID3
+from mutagen import File
 
 # =============================================
 #              CONFIGURATION
@@ -39,25 +40,25 @@ clock = pygame.time.Clock()
 #              LOAD ASSETS
 # =============================================
 try:
-    bg_player = pygame.image.load(os.path.join("assets", "bg_player.png")).convert()
-    img_empty_platter = pygame.image.load(os.path.join("assets", "empty_platter.png")).convert_alpha()
-    img_tone_arm = pygame.image.load(os.path.join("assets", "tone_arm.png")).convert_alpha()
+    img_bg = pygame.image.load("assets/bg/bg_player.png").convert_alpha()
+    img_empty_platter = pygame.image.load("assets/bg/empty_platter.png").convert_alpha()
+    img_tone_arm = pygame.image.load("assets/bg/tone_arm.png").convert_alpha()
+    img_start_stop = pygame.image.load("assets/buttons/btn_start_stop.png").convert_alpha()
+    img_start_stop_active = pygame.image.load("assets/buttons/btn_start_stop_active.png").convert_alpha()
+    img_prev = pygame.image.load("assets/buttons/btn_prev.png").convert_alpha()
+    img_next = pygame.image.load("assets/buttons/btn_next.png").convert_alpha()
+    img_shuffle = pygame.image.load("assets/buttons/btn_shuffle.png").convert_alpha()
+    img_vol_knob = pygame.image.load("assets/buttons/vol_knob.png").convert_alpha()
+    img_33 = pygame.image.load("assets/buttons/btn_33.png").convert_alpha()
+    img_45 = pygame.image.load("assets/buttons/btn_45.png").convert_alpha()
 
     # Vinyls
     VINYL_NAMES = ['red', 'blue', 'green', 'purple', 'orange', 'teal']
     vinyl_images = {}
     for vn in VINYL_NAMES:
-        vinyl_images[vn] = pygame.image.load(os.path.join("assets", f"vinyl_{vn}.png")).convert_alpha()
+        if os.path.exists(f"assets/vinyl/vinyl_{vn}.png"):
+            vinyl_images[vn] = pygame.image.load(f"assets/vinyl/vinyl_{vn}.png").convert_alpha()
 
-    # Buttons
-    img_start_stop = pygame.image.load(os.path.join("assets", "btn_start_stop.png")).convert_alpha()
-    img_start_stop_active = pygame.image.load(os.path.join("assets", "btn_start_stop_active.png")).convert_alpha()
-    img_prev = pygame.image.load(os.path.join("assets", "btn_prev.png")).convert_alpha()
-    img_next = pygame.image.load(os.path.join("assets", "btn_next.png")).convert_alpha()
-    img_shuffle = pygame.image.load(os.path.join("assets", "btn_shuffle.png")).convert_alpha()
-    img_33 = pygame.image.load(os.path.join("assets", "btn_33.png")).convert_alpha()
-    img_45 = pygame.image.load(os.path.join("assets", "btn_45.png")).convert_alpha()
-    img_vol_knob = pygame.image.load(os.path.join("assets", "vol_knob.png")).convert_alpha()
 except Exception as e:
     print(f"Error loading assets: {e}")
     pygame.quit()
@@ -82,6 +83,7 @@ current_track_index = 0
 is_playing = False
 is_shuffled = False
 volume = 0.7
+playback_offset = 0.0
 
 TRACK_END_EVENT = pygame.USEREVENT + 1
 pygame.mixer.music.set_endevent(TRACK_END_EVENT)
@@ -101,13 +103,19 @@ def scan_music_folder():
             fp = os.path.join(music_dir, f)
             playlist.append(fp)
             try:
-                if f.lower().endswith('.mp3'):
-                    audio = MP3(fp)
+                audio = File(fp)
+                if audio is not None and audio.info is not None:
                     track_durations[fp] = audio.info.length
                 else:
-                    track_durations[fp] = 0
+                    # Fallback ke Pygame jika mutagen gagal
+                    snd = pygame.mixer.Sound(fp)
+                    track_durations[fp] = snd.get_length()
             except Exception:
-                track_durations[fp] = 0
+                try:
+                    snd = pygame.mixer.Sound(fp)
+                    track_durations[fp] = snd.get_length()
+                except Exception:
+                    track_durations[fp] = 0
     playlist.sort()
     for i in range(len(playlist)):
         track_vinyl_colors[i] = VINYL_NAMES[i % len(VINYL_NAMES)]
@@ -137,20 +145,25 @@ def format_time(seconds):
     return f"{m}:{s:02d}"
 
 
-def load_and_play():
-    global is_playing
-    if not playlist:
+def load_and_play(skip_count=0):
+    global is_playing, playback_offset, current_track_index
+    if not playlist or skip_count >= len(playlist):
+        is_playing = False
         return
     try:
         pygame.mixer.music.load(playlist[current_track_index])
         pygame.mixer.music.play()
+        playback_offset = 0.0
         is_playing = True
     except Exception as e:
         print(f"Error playing track: {e}")
+        # Auto-skip if corrupt
+        current_track_index = (current_track_index + 1) % len(playlist)
+        load_and_play(skip_count + 1)
 
 
 def play_next():
-    global current_track_index
+    global current_track_index, playback_offset
     if not playlist: return
     old_idx = current_track_index
     if is_shuffled:
@@ -162,7 +175,7 @@ def play_next():
 
 
 def play_prev():
-    global current_track_index
+    global current_track_index, playback_offset
     if not playlist: return
     old_idx = current_track_index
     current_track_index = (current_track_index - 1) % len(playlist)
@@ -171,17 +184,18 @@ def play_prev():
 
 
 def toggle_play_pause():
-    global is_playing
+    global is_playing, playback_offset
     if not playlist: return
     if is_playing:
         pygame.mixer.music.pause()
         is_playing = False
     else:
-        if not pygame.mixer.music.get_busy() and pygame.mixer.music.get_pos() == -1:
-            load_and_play()
-        else:
+        # If it's paused, get_pos() will be > 0. If it's never started, get_pos() is -1 or 0
+        if pygame.mixer.music.get_pos() > 0:
             pygame.mixer.music.unpause()
-            is_playing = True
+        else:
+            load_and_play()
+        is_playing = True
 
 
 def play_track(index):
@@ -195,8 +209,9 @@ def play_track(index):
 
 def get_playback_pos():
     pos = pygame.mixer.music.get_pos()
-    if pos == -1: return 0
-    return pos / 1000.0
+    if pos == -1:
+        return 0
+    return playback_offset + (pos / 1000.0)
 
 
 # =============================================
@@ -222,28 +237,11 @@ def trigger_vinyl_swap(old_idx, new_idx):
 #              UI LAYOUT (Base 640x360)
 # =============================================
 
-# --- Turntable ---
+# --- State & Base Coordinates ---
 T_X, T_Y = 15, 10
+T_W, T_H = 370, 340
 TURNTABLE_CX = T_X + 160
 TURNTABLE_CY = T_Y + 150
-vinyl_center = (TURNTABLE_CX, TURNTABLE_CY)
-vinyl_angle = 0.0
-
-# --- Tone Arm ---
-ARM_PIVOT_ON_IMAGE = (150, 40)
-ARM_PIVOT_SCREEN = (T_X + 295, T_Y + 45)  # Adjusted for new base
-arm_angle_current = 0.0
-ARM_ANGLE_REST = 30.0
-ARM_ANGLE_OUTER = 15.0
-ARM_ANGLE_INNER = -12.0
-ARM_SPEED = 0.5
-
-# --- Pitch Slider (Volume) ---
-VOL_X = T_X + 325
-VOL_Y = T_Y + 140
-VOL_W = 24
-VOL_H = 110
-dragging_volume = False
 
 # --- Buttons ---
 rect_start_stop = pygame.Rect(T_X + 15, T_Y + 295, 46, 30)
@@ -255,12 +253,43 @@ rect_next = pygame.Rect(T_X + 128, T_Y + 305, 16, 16)
 rect_33 = pygame.Rect(T_X + 263, T_Y + 305, 12, 12)
 rect_45 = pygame.Rect(T_X + 293, T_Y + 305, 12, 12)
 
+# --- State ---
+vinyl_center = (TURNTABLE_CX, TURNTABLE_CY)
+vinyl_angle = 0.0
+
+# --- Tone Arm ---
+ARM_PIVOT_ON_IMAGE = (150, 40)
+ARM_PIVOT_SCREEN = (T_X + 295, T_Y + 45)  # Adjusted for new base
+arm_angle_current = 0.0
+ARM_ANGLE_REST = 45.0    # Benar-benar di luar piringan (ke kanan)
+ARM_ANGLE_OUTER = 23.0   # Tepat di ujung luar piringan
+ARM_ANGLE_INNER = 5.0    # Diubah agar tidak menabrak label
+ARM_SPEED = 0.5
+
+# --- Pitch Slider (Volume) ---
+VOL_X = T_X + 325
+VOL_Y = T_Y + 140
+VOL_W = 24
+VOL_H = 110
+dragging_volume = False
+
 # --- Playlist Panel ---
 PL_X = 410
-PL_Y = 45
-PL_W = 210
-PL_H = 295
-PL_ITEM_H = 26
+PL_Y = 10
+PL_W = 215
+PL_H = 340
+PL_ITEM_H = 42
+
+PL_VIEW_Y = PL_Y + 35
+PL_VIEW_H = PL_H - 65
+
+# --- Progress Bar (Moved to Playlist Panel) ---
+PROG_X = PL_X + 15
+PROG_Y = PL_Y + PL_H - 15
+PROG_W = PL_W - 30
+PROG_H = 4
+dragging_progress = False
+playback_offset = 0.06
 playlist_scroll_offset = 0
 playlist_hover_index = -1
 
@@ -299,8 +328,20 @@ while running:
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             pos = mouse_pos
 
+            # Progress Drag Start
+            if PROG_X - 5 <= pos[0] <= PROG_X + PROG_W + 5 and PROG_Y - 10 <= pos[1] <= PROG_Y + PROG_H + 10:
+                if playlist and is_playing:
+                    dragging_progress = True
+                    duration = track_durations.get(playlist[current_track_index], 0)
+                    if duration > 0:
+                        rel_x = max(0, min(pos[0] - PROG_X, PROG_W))
+                        ratio = rel_x / PROG_W
+                        seek_time = ratio * duration
+                        pygame.mixer.music.play(start=seek_time)
+                        playback_offset = seek_time
+
             # Start/Stop
-            if rect_start_stop.collidepoint(pos):
+            elif rect_start_stop.collidepoint(pos):
                 toggle_play_pause()
                 if playlist:
                     current_title, current_artist = get_track_info(playlist[current_track_index])
@@ -325,8 +366,8 @@ while running:
                 pygame.mixer.music.set_volume(volume)
 
             # Playlist Click
-            elif PL_X <= pos[0] <= PL_X + PL_W and PL_Y <= pos[1] <= PL_Y + PL_H:
-                rel_y = pos[1] - PL_Y + playlist_scroll_offset
+            elif PL_X <= pos[0] <= PL_X + PL_W and PL_VIEW_Y <= pos[1] <= PL_VIEW_Y + PL_VIEW_H:
+                rel_y = pos[1] - PL_VIEW_Y + playlist_scroll_offset
                 clicked_idx = int(rel_y // PL_ITEM_H)
                 if 0 <= clicked_idx < len(playlist):
                     play_track(clicked_idx)
@@ -334,18 +375,32 @@ while running:
 
         elif event.type == pygame.MOUSEBUTTONUP:
             dragging_volume = False
+            dragging_progress = False
 
         elif event.type == pygame.MOUSEMOTION:
             if dragging_volume:
                 rel_y = mouse_pos[1] - VOL_Y
                 volume = 1.0 - max(0.0, min(1.0, rel_y / VOL_H))
                 pygame.mixer.music.set_volume(volume)
+            
+            if dragging_progress and playlist and is_playing:
+                duration = track_durations.get(playlist[current_track_index], 0)
+                if duration > 0:
+                    rel_x = max(0, min(mouse_pos[0] - PROG_X, PROG_W))
+                    ratio = rel_x / PROG_W
+                    seek_time = ratio * duration
+                    pygame.mixer.music.play(start=seek_time)
+                    playback_offset = seek_time
 
         elif event.type == pygame.MOUSEWHEEL:
-            if PL_X <= mouse_pos[0] <= PL_X + PL_W:
-                max_scroll = max(0, len(playlist) * PL_ITEM_H - PL_H)
-                playlist_scroll_offset -= event.y * 15
-                playlist_scroll_offset = max(0, min(playlist_scroll_offset, max_scroll))
+            if PL_X <= mouse_pos[0] <= PL_X + PL_W and PL_Y <= mouse_pos[1] <= PL_Y + PL_H:
+                if playlist:
+                    th = len(playlist) * PL_ITEM_H
+                    if th > PL_VIEW_H:
+                        playlist_scroll_offset -= event.y * 20
+                        playlist_scroll_offset = max(0, min(playlist_scroll_offset, th - PL_VIEW_H))
+                    else:
+                        playlist_scroll_offset = 0
 
     # ============ UPDATE ============
     # Vinyl rotation
@@ -381,15 +436,15 @@ while running:
 
     # Hover
     playlist_hover_index = -1
-    if PL_X <= mouse_pos[0] <= PL_X + PL_W and PL_Y <= mouse_pos[1] <= PL_Y + PL_H:
-        rel_y = mouse_pos[1] - PL_Y + playlist_scroll_offset
+    if PL_X <= mouse_pos[0] <= PL_X + PL_W and PL_VIEW_Y <= mouse_pos[1] <= PL_VIEW_Y + PL_VIEW_H:
+        rel_y = mouse_pos[1] - PL_VIEW_Y + playlist_scroll_offset
         h_idx = int(rel_y // PL_ITEM_H)
         if 0 <= h_idx < len(playlist):
             playlist_hover_index = h_idx
 
     # ============ RENDER TO LOW-RES SURFACE ============
     display_surface.fill(COL_BG)
-    display_surface.blit(bg_player, (0, 0))
+    display_surface.blit(img_bg, (0, 0))
 
     # --- Platter / Vinyl ---
     platter_rect = img_empty_platter.get_rect(center=vinyl_center)
@@ -438,8 +493,7 @@ while running:
     display_surface.blit(rot_arm, (arm_x, arm_y))
 
     # --- Pitch Slider (Volume) ---
-    fill_y = VOL_Y + VOL_H - int(VOL_H * volume)
-    knob_y = fill_y - img_vol_knob.get_height() // 2
+    knob_y = VOL_Y + int((1.0 - volume) * VOL_H)
     knob_y = max(VOL_Y, min(knob_y, VOL_Y + VOL_H - img_vol_knob.get_height()))
     display_surface.blit(img_vol_knob, (VOL_X + 2, knob_y))
 
@@ -467,13 +521,15 @@ while running:
         display_surface.blit(a_surf, (PL_X, 26))
 
     # --- Playlist Panel ---
-    display_surface.set_clip(pygame.Rect(PL_X, PL_Y, PL_W, PL_H))
+    clip_rect = pygame.Rect(PL_X, PL_VIEW_Y, PL_W, PL_VIEW_H)
+    display_surface.set_clip(clip_rect)
+    
     for i, track_path in enumerate(playlist):
-        item_y = PL_Y + i * PL_ITEM_H - playlist_scroll_offset
-        if item_y + PL_ITEM_H < PL_Y or item_y > PL_Y + PL_H:
+        item_y = PL_VIEW_Y + i * PL_ITEM_H - playlist_scroll_offset
+        if item_y + PL_ITEM_H < PL_VIEW_Y or item_y > PL_VIEW_Y + PL_VIEW_H:
             continue
         
-        irect = pygame.Rect(PL_X + 2, item_y + 1, PL_W - 10, PL_ITEM_H - 2)
+        irect = pygame.Rect(PL_X, item_y, PL_W, PL_ITEM_H - 2)
         
         if i == current_track_index and (is_playing or pygame.mixer.music.get_busy()):
             pygame.draw.rect(display_surface, COL_PANEL_ACTIVE, irect)
@@ -496,11 +552,32 @@ while running:
 
     display_surface.set_clip(None)
 
+    # --- Progress Bar (in Playlist Panel) ---
+    playback_pos = get_playback_pos()
+    duration = track_durations.get(playlist[current_track_index], 0) if playlist else 0
+    progress_ratio = min(1.0, playback_pos / duration) if duration > 0 else 0
+
+    # Background track
+    pygame.draw.rect(display_surface, (20, 22, 28), (PROG_X, PROG_Y, PROG_W, PROG_H), border_radius=2)
+    
+    # Fill
+    if progress_ratio > 0:
+        fill_w = max(1, int(PROG_W * progress_ratio))
+        pygame.draw.rect(display_surface, (100, 200, 255), (PROG_X, PROG_Y, fill_w, PROG_H), border_radius=2)
+        # Thumb / scrubber dot
+        pygame.draw.rect(display_surface, (255, 255, 255), (PROG_X + fill_w - 2, PROG_Y - 2, 4, PROG_H + 4))
+
+    # Time text
+    t_cur_surf = font_time.render(format_time(playback_pos), False, (150, 150, 160))
+    t_dur_surf = font_time.render(format_time(duration), False, (150, 150, 160))
+    display_surface.blit(t_cur_surf, (PROG_X, PROG_Y - 12))
+    display_surface.blit(t_dur_surf, (PROG_X + PROG_W - t_dur_surf.get_width(), PROG_Y - 12))
+
     if playlist:
         th = len(playlist) * PL_ITEM_H
-        if th > PL_H:
-            sh = max(10, int(PL_H * (PL_H / th)))
-            sy = PL_Y + int((PL_H - sh) * (playlist_scroll_offset / (th - PL_H)))
+        if th > PL_VIEW_H:
+            sh = max(10, int(PL_VIEW_H * (PL_VIEW_H / th)))
+            sy = PL_VIEW_Y + int((PL_VIEW_H - sh) * (playlist_scroll_offset / (th - PL_VIEW_H)))
             pygame.draw.rect(display_surface, (100, 105, 120), (PL_X + PL_W - 6, sy, 4, sh))
 
     # ============ UPSCALE & FLIP ============

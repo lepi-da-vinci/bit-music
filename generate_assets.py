@@ -2,7 +2,9 @@ import pygame
 import os
 import math
 
-os.makedirs('assets', exist_ok=True)
+os.makedirs('assets/bg', exist_ok=True)
+os.makedirs('assets/vinyl', exist_ok=True)
+os.makedirs('assets/buttons', exist_ok=True)
 pygame.init()
 
 def create_bg_player():
@@ -68,7 +70,7 @@ def create_bg_player():
     pygame.draw.rect(surf, (45, 50, 60), (P_X + 10, P_Y + 10, P_W - 20, 25))
     pygame.draw.line(surf, (80, 85, 100), (P_X + 10, P_Y + 35), (P_X + P_W - 10, P_Y + 35))
 
-    pygame.image.save(surf, 'assets/bg_player.png')
+    pygame.image.save(surf, 'assets/bg/bg_player.png')
 
 def create_empty_platter():
     size = 250
@@ -90,7 +92,7 @@ def create_empty_platter():
     # Center
     pygame.draw.circle(surf, (180, 185, 195), (c, c), 4)
     pygame.draw.circle(surf, (50, 50, 50), (c, c), 2)
-    pygame.image.save(surf, 'assets/empty_platter.png')
+    pygame.image.save(surf, 'assets/bg/empty_platter.png')
 
 def create_vinyl(name, label_col):
     size = 246
@@ -123,7 +125,7 @@ def create_vinyl(name, label_col):
     pygame.draw.circle(surf, (150, 150, 160), (c, c), 4)
     pygame.draw.circle(surf, (0, 0, 0), (c, c), 2)
 
-    pygame.image.save(surf, f'assets/vinyl_{name}.png')
+    pygame.image.save(surf, f'assets/vinyl/vinyl_{name}.png')
 
 def create_tone_arm():
     size = 200
@@ -149,7 +151,7 @@ def create_tone_arm():
     pygame.draw.rect(surf, (255, 40, 40), (end[0]-6, end[1]+12, 2, 2))
 
     pygame.draw.rect(surf, (90, 95, 110), (168, 25, 16, 28), border_radius=2)
-    pygame.image.save(surf, 'assets/tone_arm.png')
+    pygame.image.save(surf, 'assets/bg/tone_arm.png')
 
 def create_start_stop():
     w, h = 46, 30
@@ -161,7 +163,7 @@ def create_start_stop():
     font = pygame.font.SysFont("Consolas", 8)
     surf.blit(font.render("START", False, (200, 200, 210)), (14, 4))
     surf.blit(font.render("STOP", False, (200, 200, 210)), (16, 16))
-    pygame.image.save(surf, 'assets/btn_start_stop.png')
+    pygame.image.save(surf, 'assets/buttons/btn_start_stop.png')
 
 def create_start_stop_active():
     w, h = 46, 30
@@ -173,7 +175,7 @@ def create_start_stop_active():
     font = pygame.font.SysFont("Consolas", 8)
     surf.blit(font.render("START", False, (200, 200, 210)), (14, 4))
     surf.blit(font.render("STOP", False, (200, 200, 210)), (16, 16))
-    pygame.image.save(surf, 'assets/btn_start_stop_active.png')
+    pygame.image.save(surf, 'assets/buttons/btn_start_stop_active.png')
 
 def create_speed_btns():
     for name, col in [("btn_33", (255, 60, 80)), ("btn_45", (60, 180, 255))]:
@@ -181,21 +183,21 @@ def create_speed_btns():
         pygame.draw.circle(surf, (15, 15, 20), (6, 6), 6)
         pygame.draw.circle(surf, col, (6, 6), 4)
         pygame.draw.rect(surf, (255, 255, 255), (4, 4, 2, 2))
-        pygame.image.save(surf, f'assets/{name}.png')
+        pygame.image.save(surf, f'assets/buttons/{name}.png')
 
 def create_pitch_knob():
     surf = pygame.Surface((20, 12), pygame.SRCALPHA)
     pygame.draw.rect(surf, (10, 10, 15), (0, 0, 20, 12), border_radius=2)
     pygame.draw.rect(surf, (100, 105, 120), (1, 1, 18, 10), border_radius=1)
     pygame.draw.line(surf, (200, 205, 220), (4, 6), (16, 6), 2)
-    pygame.image.save(surf, 'assets/vol_knob.png')
+    pygame.image.save(surf, 'assets/buttons/vol_knob.png')
 
 def create_mini_icon(name, dots):
     surf = pygame.Surface((16, 16), pygame.SRCALPHA)
     pygame.draw.rect(surf, (40, 45, 55), (0, 0, 16, 16), border_radius=2)
     for x, y in dots:
         pygame.draw.rect(surf, (220, 220, 230), (x, y, 2, 2))
-    pygame.image.save(surf, f'assets/{name}.png')
+    pygame.image.save(surf, f'assets/buttons/{name}.png')
 
 # ============ GENERATE ALL ============
 create_bg_player()
