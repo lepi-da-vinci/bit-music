@@ -244,15 +244,7 @@ body {
   transition: transform 0.5s ease;
 }
 
-.speeds {
-  position: absolute;
-  bottom: 50px; left: 25px;
-  z-index: 2;
-  font-size: 10px;
-  color: #8c91a0;
-  font-weight: bold;
-}
-.speed-text { margin-right: 15px; }
+.speed-text { margin-right: 0px; }
 
 /* Controls */
 .controls {
@@ -283,6 +275,7 @@ body {
   width: 140px; 
   padding: 15px; 
   align-items: center;
+  z-index: 20;
 }
 .mixer-panel h2 {
   margin-top: 0;

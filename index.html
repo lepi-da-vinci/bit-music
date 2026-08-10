@@ -60,11 +60,6 @@
       <!-- Player Chassis (Image) -->
       <img src="assets/turntable_base.png" class="turntable-base" alt="Chassis">
 
-      <!-- Speeds -->
-      <div class="speeds">
-        <span class="speed-text" id="btn-speed-33" style="cursor:pointer; color: var(--gold);">33</span>
-        <span class="speed-text" id="btn-speed-45" style="cursor:pointer;">45</span>
-      </div>
 
       <!-- Platter Base -->
       <img src="assets/empty_platter.png" class="platter-base" alt="Platter">
@@ -93,6 +88,12 @@
         <button id="btn-shuffle" class="control-btn small"><img id="icon-shuffle" src="assets/btn_shuffle.png"></button>
         <button id="btn-repeat" class="control-btn small"><img id="icon-repeat" src="assets/btn_repeat.png"></button>
         <button id="btn-next" class="control-btn small"><img src="assets/btn_next.png"></button>
+        
+        <!-- Speeds -->
+        <div style="display: flex; gap: 12px; align-items: center; margin-left: 15px; margin-top: 5px;">
+          <span class="speed-text" id="btn-speed-33" style="cursor:pointer; color: var(--gold); font-size: 11px; font-weight: bold;">33</span>
+          <span class="speed-text" id="btn-speed-45" style="cursor:pointer; color: #8c91a0; font-size: 11px; font-weight: bold;">45</span>
+        </div>
       </div>
 
       <!-- Progress Bar -->
@@ -132,7 +133,7 @@
       </div>
       
       <!-- Auto-Mix Toggle -->
-      <div style="margin-top: 25px; display: flex; align-items: center; gap: 10px; justify-content: center;">
+      <div style="margin-top: 25px; display: flex; align-items: center; gap: 10px; justify-content: center; position: relative; z-index: 50;">
         <label class="switch">
           <input type="checkbox" id="auto-mix-toggle">
           <span class="pixel-switch"></span>
