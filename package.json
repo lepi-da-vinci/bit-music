@@ -1,0 +1,45 @@
+{
+  "name": "retro-groove",
+  "version": "1.0.0",
+  "description": "Retro Groove Music Player",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^43.3.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.retrogroove.app",
+    "productName": "Retro Groove",
+    "win": {
+      "target": "nsis",
+      "icon": "assets/vinyl_red.png"
+    },
+    "directories": {
+      "output": "dist"
+    },
+    "extraResources": [
+      {
+        "from": "assets",
+        "to": "assets",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "music",
+        "to": "music",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ]
+  }
+}

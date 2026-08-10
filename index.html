@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Retro Groove Music Player</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Starry Background -->
+  <div id="stars-container"></div>
+
+  <div class="app-container">
+    
+    <!-- ALBUMS PANEL -->
+    <div class="panel album-panel">
+      <h2>Albums</h2>
+      <div id="album-list" class="scroll-container">
+        <!-- Injected via JS -->
+      </div>
+    </div>
+
+    <!-- PLAYLIST PANEL -->
+    <div class="panel playlist-panel">
+      <div class="lcd-display">
+        <div id="lcd-title" class="lcd-text">Loading...</div>
+        <div id="lcd-artist" class="lcd-subtext"></div>
+      </div>
+      
+      <div id="playlist-list" class="scroll-container">
+        <!-- Injected via JS -->
+      </div>
+    </div>
+
+    <!-- PLAYER PANEL -->
+    <div class="panel player-panel" id="player-panel">
+      <!-- Player Chassis (Image) -->
+      <img src="assets/turntable_base.png" class="turntable-base" alt="Chassis">
+
+      <!-- Speeds -->
+      <div class="speeds">
+        <span class="speed-text">33</span>
+        <span class="speed-text">45</span>
+      </div>
+
+      <!-- Platter Base -->
+      <img src="assets/empty_platter.png" class="platter-base" alt="Platter">
+      
+      <!-- Vinyl Container (Spins) -->
+      <div id="vinyl-container" class="vinyl-container">
+        <img id="vinyl-disc" src="assets/vinyl_red.png" class="vinyl-disc" alt="Vinyl">
+        <div id="album-art" class="album-art"></div>
+        <div class="spindle"></div>
+      </div>
+
+      <!-- Tone Arm -->
+      <img id="tone-arm" src="assets/tone_arm.png" class="tone-arm" alt="Tone Arm">
+
+      <!-- Volume Slider -->
+      <div class="volume-container">
+        <img src="assets/vol_slider_bg.png" class="vol-slider-bg">
+        <img src="assets/vol_knob.png" id="vol-knob" class="vol-knob" alt="Knob">
+        <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.5" class="vol-slider-input" orient="vertical">
+      </div>
+
+      <!-- Playback Controls -->
+      <div class="controls">
+        <button id="btn-play" class="control-btn"><img id="icon-play" src="assets/btn_start_stop.png"></button>
+        <button id="btn-prev" class="control-btn small"><img src="assets/btn_prev.png"></button>
+        <button id="btn-shuffle" class="control-btn small"><img id="icon-shuffle" src="assets/btn_shuffle.png"></button>
+        <button id="btn-repeat" class="control-btn small"><img id="icon-repeat" src="assets/btn_repeat.png"></button>
+        <button id="btn-next" class="control-btn small"><img src="assets/btn_next.png"></button>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="progress-container">
+        <div class="progress-bar-bg" id="progress-bg">
+          <div class="progress-bar-fill" id="progress-fill"></div>
+          <div class="progress-bar-thumb" id="progress-thumb"></div>
+        </div>
+        <div id="time-display" class="time-display">0:00</div>
+      </div>
+      
+    </div>
+  </div>
+
+  <audio id="audio-player"></audio>
+  <script src="renderer.js"></script>
+</body>
+</html>
