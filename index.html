@@ -10,6 +10,24 @@
   <!-- Starry Background -->
   <div id="stars-container"></div>
 
+  <!-- Studio Lights Toggle -->
+  <div class="switch-container">
+    <label class="switch">
+      <input type="checkbox" id="dark-mode-toggle">
+      <span class="slider pixel-switch"></span>
+    </label>
+    <span class="switch-label">Studio Lights</span>
+  </div>
+
+  <!-- Lo-Fi Toggle -->
+  <div class="switch-container lofi-switch">
+    <label class="switch">
+      <input type="checkbox" id="lofi-toggle">
+      <span class="slider pixel-switch"></span>
+    </label>
+    <span class="switch-label">Lo-Fi Dust</span>
+  </div>
+
   <div class="app-container">
     
     <!-- ALBUMS PANEL -->
@@ -25,7 +43,9 @@
       <div class="lcd-display">
         <canvas id="lcd-canvas"></canvas>
         <div class="lcd-content">
-          <div id="lcd-title" class="lcd-text">Loading...</div>
+          <div class="marquee-container">
+            <div id="lcd-title" class="lcd-text marquee-text">Loading...</div>
+          </div>
           <div id="lcd-artist" class="lcd-subtext"></div>
         </div>
       </div>
@@ -63,7 +83,7 @@
       <div class="volume-container">
         <img src="assets/vol_slider_bg.png" class="vol-slider-bg">
         <img src="assets/vol_knob.png" id="vol-knob" class="vol-knob" alt="Knob">
-        <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.5" class="vol-slider-input" orient="vertical">
+        <input type="range" id="vol-slider" min="0" max="1" step="0.01" orient="vertical">
       </div>
 
       <!-- Playback Controls -->
@@ -84,6 +104,41 @@
         <div id="time-display" class="time-display">0:00</div>
       </div>
       
+    </div>
+
+    <!-- MIXER PANEL -->
+    <div class="panel mixer-panel">
+      <h2>MIXER</h2>
+      <div class="eq-container">
+        <!-- 3-Band EQ -->
+        <div class="eq-band">
+          <div class="eq-label">BASS</div>
+          <input type="range" id="eq-bass" class="pixel-slider" min="-20" max="20" step="1" value="0">
+        </div>
+        <div class="eq-band">
+          <div class="eq-label">MID</div>
+          <input type="range" id="eq-mid" class="pixel-slider" min="-20" max="20" step="1" value="0">
+        </div>
+        <div class="eq-band">
+          <div class="eq-label">TREB</div>
+          <input type="range" id="eq-treb" class="pixel-slider" min="-20" max="20" step="1" value="0">
+        </div>
+
+        <!-- Pitch Fader -->
+        <div class="pitch-container">
+          <div class="pitch-label">PITCH</div>
+          <input type="range" id="pitch-slider" class="pixel-slider" min="0.8" max="1.2" step="0.01" value="1.0">
+        </div>
+      </div>
+      
+      <!-- Auto-Mix Toggle -->
+      <div style="margin-top: 25px; display: flex; align-items: center; gap: 10px; justify-content: center;">
+        <label class="switch">
+          <input type="checkbox" id="auto-mix-toggle">
+          <span class="pixel-switch"></span>
+        </label>
+        <span class="switch-label" style="font-size: 11px;">AUTO MIX (GENRE)</span>
+      </div>
     </div>
   </div>
 

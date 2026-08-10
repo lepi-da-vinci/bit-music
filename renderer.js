@@ -15,7 +15,7 @@ try {
   const progressBg = document.getElementById('progress-bg');
   const progressFill = document.getElementById('progress-fill');
   const progressThumb = document.getElementById('progress-thumb');
-  const volSlider = document.getElementById('volume-slider');
+  const volSlider = document.getElementById('vol-slider');
   const volKnob = document.getElementById('vol-knob');
   const lcdTitle = document.getElementById('lcd-title');
   const lcdArtist = document.getElementById('lcd-artist');
@@ -27,20 +27,45 @@ try {
     'purple': '180, 80, 220', 'orange': '255, 170, 60', 'teal': '60, 200, 180'
   };
 
-  // Web Audio API for Bass Glow
+  // Web Audio API for Bass Glow and Visualizer
   let audioCtx;
   let analyser;
   let dataArray;
   let source;
+  let bassFilter, midFilter, trebFilter;
 
   function initAudioVisualizer() {
     if (audioCtx) return;
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     analyser = audioCtx.createAnalyser();
     analyser.fftSize = 256;
+    
+    // Create EQ Filters
+    bassFilter = audioCtx.createBiquadFilter();
+    bassFilter.type = "lowshelf";
+    bassFilter.frequency.value = 250;
+    bassFilter.gain.value = document.getElementById('eq-bass').value;
+    
+    midFilter = audioCtx.createBiquadFilter();
+    midFilter.type = "peaking";
+    midFilter.frequency.value = 1000;
+    midFilter.Q.value = 1;
+    midFilter.gain.value = document.getElementById('eq-mid').value;
+    
+    trebFilter = audioCtx.createBiquadFilter();
+    trebFilter.type = "highshelf";
+    trebFilter.frequency.value = 4000;
+    trebFilter.gain.value = document.getElementById('eq-treb').value;
+    
     source = audioCtx.createMediaElementSource(audio);
-    source.connect(analyser);
+    
+    // Chain: Source -> EQ -> Analyser -> Destination
+    source.connect(bassFilter);
+    bassFilter.connect(midFilter);
+    midFilter.connect(trebFilter);
+    trebFilter.connect(analyser);
     analyser.connect(audioCtx.destination);
+    
     dataArray = new Uint8Array(analyser.frequencyBinCount);
 
     const canvas = document.getElementById('lcd-canvas');
@@ -54,11 +79,7 @@ try {
         if (isPlaying) {
           currentPlaybackRate += (targetPlaybackRate - currentPlaybackRate) * 0.05;
         } else {
-          currentPlaybackRate += (0 - currentPlaybackRate) * 0.05;
-          if (currentPlaybackRate < 0.01 && !audio.paused) {
-            currentPlaybackRate = 0;
-            audio.pause();
-          }
+          currentPlaybackRate = 0;
         }
         audio.playbackRate = Math.max(0.01, currentPlaybackRate); 
       }
@@ -67,7 +88,17 @@ try {
       if (currentPlaybackRate < 0.01 && !isPlaying && !isVinylDragging) {
         vinylContainer.style.boxShadow = 'none';
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (noiseGain) noiseGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
         return;
+      }
+      
+      // Update Lofi Crackle Volume
+      if (noiseGain) {
+        if (isLofiEnabled && currentPlaybackRate > 0.05) {
+          noiseGain.gain.setTargetAtTime(0.5, audioCtx.currentTime, 0.1);
+        } else {
+          noiseGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+        }
       }
       
       // Rotate Vinyl manually
@@ -131,6 +162,7 @@ try {
           path: window.api.getMusicPath(f.filename),
           title: f.title || f.filename.replace(/\.[^/.]+$/, ""),
           artist: f.artist || "Unknown Artist",
+          genre: f.genre || "Unknown",
           coverBase64: f.coverBase64,
           vinylColor: vinylColors[Math.floor(Math.random() * vinylColors.length)]
         }));
@@ -195,6 +227,14 @@ try {
     lcdTitle.innerText = track.title;
     lcdArtist.innerText = track.artist;
     
+    // Check if marquee is needed
+    lcdTitle.classList.remove('scrolling');
+    setTimeout(() => {
+      if (lcdTitle.scrollWidth > lcdTitle.parentElement.clientWidth) {
+        lcdTitle.classList.add('scrolling');
+      }
+    }, 50);
+    
     const albumArt = document.getElementById('album-art');
     if (track.coverBase64) {
       albumArt.style.backgroundImage = `url('${track.coverBase64}')`;
@@ -233,6 +273,8 @@ try {
 
   function pauseTrack() {
     isPlaying = false;
+    audio.pause();
+    currentPlaybackRate = 0;
     playBtnIcon.src = window.api.getAssetPath('btn_start_stop.png');
     toneArm.style.transform = 'rotate(-32deg) scale(0.8)';
   }
@@ -267,30 +309,71 @@ function updateToneArm() {
     updateToneArm();
   });
 
+  let isAutoMix = false;
+  const autoMixToggle = document.getElementById('auto-mix-toggle');
+  if (autoMixToggle) {
+    autoMixToggle.onchange = (e) => {
+      isAutoMix = e.target.checked;
+    };
+  }
+
   audio.addEventListener('ended', () => {
     if (isRepeat) {
       playTrack();
+    } else if (isAutoMix) {
+      const currentGenre = playlist[currentIndex].genre;
+      let foundNext = -1;
+      
+      if (currentGenre && currentGenre !== "Unknown") {
+        for (let i = 1; i < playlist.length; i++) {
+          let checkIdx = (currentIndex + i) % playlist.length;
+          if (playlist[checkIdx].genre === currentGenre) {
+            foundNext = checkIdx;
+            break;
+          }
+        }
+      }
+      
+      if (foundNext !== -1) {
+        loadTrack(foundNext);
+        playTrack();
+      } else {
+        document.getElementById('btn-next').click();
+      }
     } else {
       document.getElementById('btn-next').click();
     }
   });
 
   // UI Controls
+  let baseSpeed = 1.0;
+  let pitchMultiplier = 1.0;
+  
   const btn33 = document.getElementById('btn-speed-33');
   const btn45 = document.getElementById('btn-speed-45');
   
   btn33.onclick = () => {
-    targetPlaybackRate = 1.0;
+    baseSpeed = 1.0;
+    targetPlaybackRate = baseSpeed * pitchMultiplier;
     btn33.style.color = 'var(--gold)';
     btn45.style.color = '#8c91a0';
   };
   
   btn45.onclick = () => {
-    targetPlaybackRate = 1.35;
+    baseSpeed = 1.35;
+    targetPlaybackRate = baseSpeed * pitchMultiplier;
     btn45.style.color = 'var(--gold)';
     btn33.style.color = '#8c91a0';
   };
 
+  // Pitch Fader
+  const pitchSlider = document.getElementById('pitch-slider');
+
+  pitchSlider.oninput = (e) => {
+    pitchMultiplier = parseFloat(e.target.value);
+    targetPlaybackRate = baseSpeed * pitchMultiplier;
+  };
+  
   document.getElementById('btn-play').onclick = togglePlay;
 
   const btnShuffle = document.getElementById('btn-shuffle');
@@ -441,15 +524,95 @@ function updateToneArm() {
     };
   };
 
+  // 3-Band EQ
+  document.getElementById('eq-bass').oninput = (e) => {
+    if (bassFilter) bassFilter.gain.value = e.target.value;
+  };
+  document.getElementById('eq-mid').oninput = (e) => {
+    if (midFilter) midFilter.gain.value = e.target.value;
+  };
+  document.getElementById('eq-treb').oninput = (e) => {
+    if (trebFilter) trebFilter.gain.value = e.target.value;
+  };
+
   // Volume
   volSlider.oninput = (e) => {
     audio.volume = e.target.value;
-    const pct = 1 - e.target.value; // 1 is max (top), 0 is min (bottom)
-    volKnob.style.top = `${pct * 100}%`;
+    const pct = e.target.value;
+    volKnob.style.top = `${(1 - pct) * 100}%`;
   };
 
   // Default volume
+  audio.volume = 0.5;
   volKnob.style.top = '50%';
+
+  // Studio Lights (Dark Mode)
+  const darkModeToggle = document.getElementById('dark-mode-toggle');
+  darkModeToggle.onchange = (e) => {
+    if (e.target.checked) {
+      document.body.classList.add('dark-mode');
+    } else {
+      document.body.classList.remove('dark-mode');
+    }
+  };
+
+  // Lo-Fi Vinyl Crackle
+  let noiseNode = null;
+  let noiseGain = null;
+  let isLofiEnabled = false;
+
+  function createVinylNoise() {
+    const bufferSize = audioCtx.sampleRate * 2;
+    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    
+    let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+    for (let i = 0; i < bufferSize; i++) {
+        let white = Math.random() * 2 - 1;
+        b0 = 0.99886 * b0 + white * 0.0555179;
+        b1 = 0.99332 * b1 + white * 0.0750759;
+        b2 = 0.96900 * b2 + white * 0.1538520;
+        b3 = 0.86650 * b3 + white * 0.3104856;
+        b4 = 0.55000 * b4 + white * 0.5329522;
+        b5 = -0.7616 * b5 - white * 0.0168980;
+        let pink = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
+        b6 = white * 0.115926;
+        
+        if (Math.random() < 0.005) pink += (Math.random() * 2 - 1) * 8; // Random crackles
+        
+        data[i] = pink * 0.03; 
+    }
+    return buffer;
+  }
+
+  function startLofiNoise() {
+    if (!audioCtx) initAudioVisualizer();
+    if (noiseNode) return;
+    
+    noiseNode = audioCtx.createBufferSource();
+    noiseNode.buffer = createVinylNoise();
+    noiseNode.loop = true;
+    
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.value = 3000;
+    
+    noiseGain = audioCtx.createGain();
+    noiseGain.gain.value = 0;
+    
+    noiseNode.connect(filter);
+    filter.connect(noiseGain);
+    noiseGain.connect(audioCtx.destination);
+    
+    noiseNode.start();
+  }
+
+  document.getElementById('lofi-toggle').onchange = (e) => {
+    isLofiEnabled = e.target.checked;
+    if (isLofiEnabled && !noiseNode) {
+      startLofiNoise();
+    }
+  };
 
   // Start
   loadMusic();

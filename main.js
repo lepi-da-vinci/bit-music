@@ -72,10 +72,14 @@ ipcMain.handle('read-dir', async (event, dirPath) => {
         let coverBase64 = null;
         let title = f.replace(/\.[^/.]+$/, "");
         let artist = "Unknown Artist";
+        let genre = "Unknown";
         
         if (metadata && metadata.common) {
           if (metadata.common.title) title = metadata.common.title;
           if (metadata.common.artist) artist = metadata.common.artist;
+          if (metadata.common.genre && metadata.common.genre.length > 0) {
+            genre = metadata.common.genre[0]; // Take the primary genre
+          }
           
           if (metadata.common.picture && metadata.common.picture.length > 0) {
             const pic = metadata.common.picture[0];
@@ -87,6 +91,7 @@ ipcMain.handle('read-dir', async (event, dirPath) => {
           filename: f,
           title: title,
           artist: artist,
+          genre: genre,
           coverBase64: coverBase64
         });
       }
