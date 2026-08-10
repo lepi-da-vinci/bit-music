@@ -40,13 +40,58 @@ app.on('window-all-closed', () => {
 ipcMain.handle('read-dir', async (event, dirPath) => {
   try {
     const fullPath = path.isAbsolute(dirPath) ? dirPath : path.join(process.resourcesPath, dirPath)
-    
-    // In dev, use local path. In prod, use resourcesPath.
     const searchPath = app.isPackaged ? fullPath : path.join(__dirname, dirPath)
     
     if (fs.existsSync(searchPath)) {
       const files = fs.readdirSync(searchPath)
-      return { success: true, files: files, basePath: searchPath }
+      const musicFiles = files.filter(f => f.endsWith('.mp3') || f.endsWith('.wav') || f.endsWith('.ogg'))
+      
+      let mm;
+      try {
+        mm = await import('music-metadata');
+      } catch (e) {
+        try {
+          mm = require('music-metadata');
+        } catch (e2) {
+          console.log("music-metadata not installed");
+        }
+      }
+
+      const results = [];
+      for (const f of musicFiles) {
+        const filePath = path.join(searchPath, f);
+        let metadata = null;
+        if (mm) {
+          try {
+            metadata = await mm.parseFile(filePath, { duration: true });
+          } catch (err) {
+            console.error("Error parsing", f, err);
+          }
+        }
+        
+        let coverBase64 = null;
+        let title = f.replace(/\.[^/.]+$/, "");
+        let artist = "Unknown Artist";
+        
+        if (metadata && metadata.common) {
+          if (metadata.common.title) title = metadata.common.title;
+          if (metadata.common.artist) artist = metadata.common.artist;
+          
+          if (metadata.common.picture && metadata.common.picture.length > 0) {
+            const pic = metadata.common.picture[0];
+            coverBase64 = `data:${pic.format};base64,${pic.data.toString('base64')}`;
+          }
+        }
+        
+        results.push({
+          filename: f,
+          title: title,
+          artist: artist,
+          coverBase64: coverBase64
+        });
+      }
+      
+      return { success: true, files: results, basePath: searchPath }
     }
     return { success: true, files: [], basePath: searchPath }
   } catch (error) {

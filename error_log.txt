@@ -1,0 +1,5 @@
+loadMusic Error: Cannot read properties of undefined (reading 'replace')
+TypeError: Cannot read properties of undefined (reading 'replace')
+    at file:///D:/Kuliah/Projek/music-app/renderer.js:132:40
+    at Array.map (<anonymous>)
+    at loadMusic (file:///D:/Kuliah/Projek/music-app/renderer.js:129:33)

@@ -43,13 +43,60 @@ try {
     analyser.connect(audioCtx.destination);
     dataArray = new Uint8Array(analyser.frequencyBinCount);
 
+    const canvas = document.getElementById('lcd-canvas');
+    const ctx = canvas.getContext('2d');
+    
     function renderFrame() {
       requestAnimationFrame(renderFrame);
-      if (!isPlaying) {
+      
+      // Physics for Motor Spin-Up / Spin-Down
+      if (!isVinylDragging) {
+        if (isPlaying) {
+          currentPlaybackRate += (targetPlaybackRate - currentPlaybackRate) * 0.05;
+        } else {
+          currentPlaybackRate += (0 - currentPlaybackRate) * 0.05;
+          if (currentPlaybackRate < 0.01 && !audio.paused) {
+            currentPlaybackRate = 0;
+            audio.pause();
+          }
+        }
+        audio.playbackRate = Math.max(0.01, currentPlaybackRate); 
+      }
+      
+      // Stop rendering visualizer if completely stopped
+      if (currentPlaybackRate < 0.01 && !isPlaying && !isVinylDragging) {
         vinylContainer.style.boxShadow = 'none';
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         return;
       }
+      
+      // Rotate Vinyl manually
+      if (!isVinylDragging) {
+        vinylRotation += 2 * currentPlaybackRate; // ~3s per rotation at 1.0x
+        vinylContainer.style.transform = `rotate(${vinylRotation}deg)`;
+      }
+      
+      // Update canvas dimensions if needed
+      if (canvas.width !== canvas.offsetWidth) canvas.width = canvas.offsetWidth;
+      if (canvas.height !== canvas.offsetHeight) canvas.height = canvas.offsetHeight;
+
       analyser.getByteFrequencyData(dataArray);
+      
+      // Draw Spectrum Analyzer
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const barWidth = (canvas.width / 15) - 2;
+      let x = 0;
+      
+      for (let i = 0; i < 15; i++) {
+        // Skip some very low frequencies, take steps
+        const dataIndex = i * 2 + 2; 
+        const barHeight = (dataArray[dataIndex] / 255) * canvas.height;
+        
+        ctx.fillStyle = `rgba(100, 255, 120, ${0.4 + (barHeight/canvas.height)*0.6})`;
+        ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+        x += barWidth + 2;
+      }
+
       // Get average of lower frequencies for bass
       let bass = 0;
       for (let i = 0; i < 5; i++) {
@@ -60,7 +107,7 @@ try {
       // Calculate intensity 0-1
       const intensity = Math.pow(bass / 255, 2);
       const track = playlist[currentIndex];
-      const col = rgbColors[track.vinylColor];
+      const col = rgbColors[track.vinylColor] || '255,255,255';
 
       // Apply glow
       if (intensity > 0.1) {
@@ -79,11 +126,12 @@ try {
     try {
       const result = await window.api.readDir('music');
       if (result.success) {
-        playlist = result.files.filter(f => f.endsWith('.mp3') || f.endsWith('.wav') || f.endsWith('.ogg'));
-        playlist = playlist.map(f => ({
-          filename: f,
-          path: window.api.getMusicPath(f),
-          title: f.replace(/\.[^/.]+$/, ""), // Fallback to filename
+        playlist = result.files.map(f => ({
+          filename: f.filename,
+          path: window.api.getMusicPath(f.filename),
+          title: f.title || f.filename.replace(/\.[^/.]+$/, ""),
+          artist: f.artist || "Unknown Artist",
+          coverBase64: f.coverBase64,
           vinylColor: vinylColors[Math.floor(Math.random() * vinylColors.length)]
         }));
 
@@ -122,7 +170,7 @@ try {
       <div class="track-dot" style="background: rgb(${rgbColors[track.vinylColor]})"></div>
       <div class="track-info">
         <div class="track-title">${track.title}</div>
-        <div class="track-artist">Unknown Artist</div>
+        <div class="track-artist">${track.artist}</div>
       </div>
     `;
       el.onclick = () => {
@@ -145,7 +193,16 @@ try {
     const track = playlist[currentIndex];
     audio.src = track.path;
     lcdTitle.innerText = track.title;
-    lcdArtist.innerText = 'Unknown Artist';
+    lcdArtist.innerText = track.artist;
+    
+    const albumArt = document.getElementById('album-art');
+    if (track.coverBase64) {
+      albumArt.style.backgroundImage = `url('${track.coverBase64}')`;
+      albumArt.style.display = 'block';
+    } else {
+      albumArt.style.backgroundImage = 'none';
+      albumArt.style.display = 'none';
+    }
 
     // Vinyl change animation
     vinylDisc.style.opacity = 0;
@@ -157,30 +214,33 @@ try {
     updatePlaylistUI();
   }
 
+  let vinylRotation = 0;
+  let targetPlaybackRate = 1.0;
+  let currentPlaybackRate = 0.0;
+  let isVinylDragging = false;
+  let isToneArmDragging = false;
+
   function playTrack() {
     initAudioVisualizer();
     if (audioCtx.state === 'suspended') audioCtx.resume();
 
     if (currentIndex === -1 && playlist.length > 0) loadTrack(0);
-    audio.play();
+    if (audio.paused) audio.play();
     isPlaying = true;
     playBtnIcon.src = window.api.getAssetPath('btn_start_stop_active.png');
-    vinylContainer.classList.add('spinning');
     updateToneArm();
   }
 
   function pauseTrack() {
-  audio.pause();
-  isPlaying = false;
-  playBtnIcon.src = window.api.getAssetPath('btn_start_stop.png');
-  vinylContainer.classList.remove('spinning');
-  toneArm.style.transform = 'rotate(-32deg) scale(0.8)';
-}
+    isPlaying = false;
+    playBtnIcon.src = window.api.getAssetPath('btn_start_stop.png');
+    toneArm.style.transform = 'rotate(-32deg) scale(0.8)';
+  }
 
-function togglePlay() {
-  if (isPlaying) pauseTrack();
-  else playTrack();
-}
+  function togglePlay() {
+    if (isPlaying) pauseTrack();
+    else playTrack();
+  }
 
 function formatTime(seconds) {
   if (isNaN(seconds) || seconds < 0) return "0:00";
@@ -190,7 +250,7 @@ function formatTime(seconds) {
 }
 
 function updateToneArm() {
-  if (!isPlaying) return;
+  if (!isPlaying && !isToneArmDragging) return;
   const pct = (audio.currentTime && audio.duration) ? (audio.currentTime / audio.duration) : 0;
   // Starts at outer edge (-16 deg), moves inward to inner groove (+4 deg)
   const targetAngle = -16 + (pct * 20); 
@@ -216,6 +276,21 @@ function updateToneArm() {
   });
 
   // UI Controls
+  const btn33 = document.getElementById('btn-speed-33');
+  const btn45 = document.getElementById('btn-speed-45');
+  
+  btn33.onclick = () => {
+    targetPlaybackRate = 1.0;
+    btn33.style.color = 'var(--gold)';
+    btn45.style.color = '#8c91a0';
+  };
+  
+  btn45.onclick = () => {
+    targetPlaybackRate = 1.35;
+    btn45.style.color = 'var(--gold)';
+    btn33.style.color = '#8c91a0';
+  };
+
   document.getElementById('btn-play').onclick = togglePlay;
 
   const btnShuffle = document.getElementById('btn-shuffle');
@@ -291,6 +366,76 @@ function updateToneArm() {
 
     document.onmousemove = updateProgress;
     document.onmouseup = () => {
+      document.onmousemove = null;
+      document.onmouseup = null;
+    };
+  };
+
+  // Vinyl Scratching
+  let lastAngle = 0;
+  vinylContainer.onmousedown = (e) => {
+    if (!audio.duration) return;
+    isVinylDragging = true;
+    
+    const rect = vinylContainer.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    lastAngle = Math.atan2(e.clientY - centerY, e.clientX - centerX) * 180 / Math.PI;
+    
+    document.onmousemove = (moveEvent) => {
+      if (!isVinylDragging) return;
+      const currentAngle = Math.atan2(moveEvent.clientY - centerY, moveEvent.clientX - centerX) * 180 / Math.PI;
+      let diff = currentAngle - lastAngle;
+      
+      // Handle wrap around
+      if (diff > 180) diff -= 360;
+      if (diff < -180) diff += 360;
+      
+      vinylRotation += diff;
+      vinylContainer.style.transform = `rotate(${vinylRotation}deg)`;
+      lastAngle = currentAngle;
+      
+      // 120 degrees = 1 second of audio
+      const timeChange = diff / 120; 
+      audio.currentTime = Math.max(0, Math.min(audio.duration, audio.currentTime + timeChange));
+      updateToneArm();
+    };
+    
+    document.onmouseup = () => {
+      isVinylDragging = false;
+      document.onmousemove = null;
+      document.onmouseup = null;
+    };
+  };
+
+  // Tone Arm Dragging
+  toneArm.onmousedown = (e) => {
+    if (!audio.duration) return;
+    isToneArmDragging = true;
+    
+    // Bring it to the vinyl if it was resting (-32) and paused
+    if (!isPlaying && audio.currentTime === 0) {
+      updateToneArm();
+    }
+    
+    let startX = e.clientX;
+    let startTime = audio.currentTime;
+    
+    document.onmousemove = (moveEvent) => {
+      if (!isToneArmDragging) return;
+      let diffX = moveEvent.clientX - startX;
+      
+      // Moving mouse right (positive diffX) should move arm inwards (increase time)
+      // Roughly 100px of drag = full track duration
+      let timeChange = (diffX / 100) * audio.duration;
+      let newTime = Math.max(0, Math.min(audio.duration, startTime + timeChange));
+      
+      audio.currentTime = newTime;
+      updateToneArm(); // force update visually
+    };
+    
+    document.onmouseup = () => {
+      isToneArmDragging = false;
       document.onmousemove = null;
       document.onmouseup = null;
     };

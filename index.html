@@ -23,8 +23,11 @@
     <!-- PLAYLIST PANEL -->
     <div class="panel playlist-panel">
       <div class="lcd-display">
-        <div id="lcd-title" class="lcd-text">Loading...</div>
-        <div id="lcd-artist" class="lcd-subtext"></div>
+        <canvas id="lcd-canvas"></canvas>
+        <div class="lcd-content">
+          <div id="lcd-title" class="lcd-text">Loading...</div>
+          <div id="lcd-artist" class="lcd-subtext"></div>
+        </div>
       </div>
       
       <div id="playlist-list" class="scroll-container">
@@ -39,8 +42,8 @@
 
       <!-- Speeds -->
       <div class="speeds">
-        <span class="speed-text">33</span>
-        <span class="speed-text">45</span>
+        <span class="speed-text" id="btn-speed-33" style="cursor:pointer; color: var(--gold);">33</span>
+        <span class="speed-text" id="btn-speed-45" style="cursor:pointer;">45</span>
       </div>
 
       <!-- Platter Base -->
