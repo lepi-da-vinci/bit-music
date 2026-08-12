@@ -28,7 +28,8 @@ body {
   padding: 0;
   background-color: var(--bg-color);
   color: var(--text-main);
-  font-family: 'Consolas', monospace;
+  font-family: 'VT323', 'Consolas', monospace;
+  font-size: 20px;
   overflow: hidden;
   user-select: none;
   transition: background-color 0.5s ease;
@@ -92,7 +93,7 @@ body {
   padding: 12px 24px;
   color: var(--text-dim);
   text-decoration: none;
-  font-size: 14px;
+  font-size: 22px;
   font-weight: bold;
   transition: 0.2s;
 }
@@ -853,4 +854,79 @@ input[type=range].pixel-slider-master::-webkit-slider-runnable-track {
   color: var(--highlight);
   width: 40px;
   text-align: center;
+}
+
+/* Library View Styles */
+.library-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+  width: 100%;
+}
+.library-album-card {
+  background: var(--panel-bg);
+  border-radius: 8px;
+  padding: 15px;
+  cursor: pointer;
+  transition: transform 0.2s, background 0.2s;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+.library-album-card:hover {
+  transform: translateY(-5px);
+  background: rgba(255, 255, 255, 0.1);
+}
+.library-album-art {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background-size: cover;
+  background-position: center;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  background-color: #222;
+}
+.library-album-title {
+  font-size: 26px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.library-album-artist {
+  font-size: 20px;
+  color: var(--text-dim);
+}
+
+.library-tracklist {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.library-track-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.library-track-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.library-track-num {
+  width: 40px;
+  color: var(--text-dim);
+  font-size: 20px;
+}
+.library-track-title {
+  flex-grow: 1;
+  font-size: 22px;
+}
+.library-track-duration {
+  color: var(--text-dim);
+  font-size: 20px;
+}
+
+.hidden {
+  display: none !important;
 }

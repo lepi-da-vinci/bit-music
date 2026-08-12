@@ -6,6 +6,7 @@ try {
   let isPlaying = false;
   let isShuffled = false;
   let isRepeat = false;
+  let previousView = 'home';
 
   const audio = document.getElementById('audio-player');
   const vinylContainer = document.getElementById('vinyl-container');
@@ -33,7 +34,11 @@ try {
   const playerView = document.getElementById('player-view');
   const homeAlbums = document.getElementById('home-albums');
   const navHome = document.getElementById('nav-home');
+  const libraryView = document.getElementById('library-view');
   const navLibrary = document.getElementById('nav-library');
+  const libraryAlbumsContainer = document.getElementById('library-albums-container');
+  const libraryAlbumDetail = document.getElementById('library-album-detail');
+  const btnBackLibrary = document.getElementById('btn-back-library');
 
   const vinylColors = ['red', 'blue', 'green', 'purple', 'orange', 'teal'];
   const rgbColors = {
@@ -280,7 +285,107 @@ try {
               </div>
               `;
             }
+            // Populate Library Grid
+            const libraryAlbumsGrid = document.getElementById('library-albums-grid');
+            if (libraryAlbumsGrid) {
+              const cover = tracks[0].coverBase64 ? `url('${tracks[0].coverBase64}')` : 'none';
+              libraryAlbumsGrid.innerHTML += `
+              <div class="library-album-card" data-album="${albumName}">
+                <div class="library-album-art" style="background-image: ${cover};"></div>
+                <div class="library-album-title">${albumName}</div>
+                <div class="library-album-artist">${tracks[0].artist}</div>
+              </div>
+              `;
+            }
           });
+          
+          // Bind clicks for Library Grid
+          const libraryAlbumsGrid = document.getElementById('library-albums-grid');
+          if (libraryAlbumsGrid) {
+            document.querySelectorAll('.library-album-card').forEach(el => {
+              el.onclick = () => {
+                const selectedAlbum = el.getAttribute('data-album');
+                const tracks = albumMap[selectedAlbum];
+                
+                // Show Detail View
+                libraryAlbumsContainer.classList.add('hidden');
+                libraryAlbumDetail.classList.remove('hidden');
+                
+                // Populate Detail Header
+                const cover = tracks[0].coverBase64 ? `url('${tracks[0].coverBase64}')` : 'none';
+                document.getElementById('library-detail-art').style.backgroundImage = cover;
+                document.getElementById('library-detail-title').innerText = selectedAlbum;
+                document.getElementById('library-detail-artist-text').innerText = tracks[0].artist;
+                document.getElementById('library-detail-meta').innerHTML = `Album • 2026<br>${tracks.length} lagu`;
+                
+                // Populate Tracklist
+                const tracklistContainer = document.getElementById('library-tracklist');
+                tracklistContainer.innerHTML = '';
+                tracks.forEach((track, idx) => {
+                  const trackCover = track.coverBase64 ? `url('${track.coverBase64}')` : 'none';
+                  tracklistContainer.innerHTML += `
+                  <div class="library-track-item" data-index="${idx}" data-album="${selectedAlbum}">
+                    <div class="library-track-art" style="background-image: ${trackCover}; width: 40px; height: 40px; border-radius: 4px; margin-right: 15px; background-size: cover; background-position: center; background-color: #222;"></div>
+                    <div class="library-track-info" style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center;">
+                      <div class="library-track-title" style="line-height: 1.2;">${track.title}</div>
+                      <div class="library-track-artist" style="font-size: 18px; color: var(--text-dim); line-height: 1.2;">${track.artist} • ${selectedAlbum}</div>
+                    </div>
+                    <div class="library-track-duration" style="margin-right: 15px;">-</div>
+                    <div class="library-track-actions" style="display:flex; gap: 10px;">
+                      <span style="font-size: 16px; cursor: pointer; color: #aaa;">👍</span>
+                      <span style="font-size: 16px; cursor: pointer; color: #aaa;">👎</span>
+                      <span style="font-size: 16px; cursor: pointer; color: #aaa;">⋮</span>
+                    </div>
+                  </div>
+                  `;
+                });
+                
+                // Bind big play button
+                const btnPlay = document.getElementById('library-detail-play');
+                if (btnPlay) {
+                  btnPlay.onclick = () => {
+                    playlist = albumMap[selectedAlbum];
+                    renderPlaylist();
+                    
+                    previousView = 'library';
+                    if (libraryView) libraryView.classList.add('hidden');
+                    if (playerView) playerView.classList.remove('hidden');
+                    if (bpTogglePlayer) bpTogglePlayer.innerText = '▼';
+                    
+                    loadTrack(0);
+                    playTrack();
+                  };
+                }
+                
+                // Bind track clicks to play
+                document.querySelectorAll('.library-track-item').forEach(trackEl => {
+                  trackEl.onclick = () => {
+                    const albumName = trackEl.getAttribute('data-album');
+                    const trackIdx = parseInt(trackEl.getAttribute('data-index'));
+                    
+                    playlist = albumMap[albumName];
+                    renderPlaylist();
+                    
+                    // Switch to Player View
+                    previousView = 'library';
+                    if (libraryView) libraryView.classList.add('hidden');
+                    if (playerView) playerView.classList.remove('hidden');
+                    if (bpTogglePlayer) bpTogglePlayer.innerText = '▼';
+                    
+                    loadTrack(trackIdx);
+                    playTrack();
+                  };
+                });
+              };
+            });
+          }
+          
+          if (btnBackLibrary) {
+            btnBackLibrary.onclick = () => {
+              libraryAlbumDetail.classList.add('hidden');
+              libraryAlbumsContainer.classList.remove('hidden');
+            };
+          }
           
           // Bind clicks for Home Carousel
           if (homeAlbums) {
@@ -290,9 +395,11 @@ try {
                 playlist = albumMap[selectedAlbum];
                 
                 // Switch to Player View
+                previousView = 'home';
                 if (homeView) homeView.classList.add('hidden');
                 if (playerView) playerView.classList.remove('hidden');
                 if (navHome) navHome.classList.remove('active');
+                if (bpTogglePlayer) bpTogglePlayer.innerText = '▼';
                 
                 renderPlaylist();
                 if (playlist.length > 0) {
@@ -711,13 +818,24 @@ function updateToneArm() {
   };
 
   // Volume
+  const bpVolSlider = document.getElementById('bp-vol-slider');
+  
   volSlider.oninput = (e) => {
     audio.volume = e.target.value;
+    if (bpVolSlider) bpVolSlider.value = e.target.value;
   };
+
+  if (bpVolSlider) {
+    bpVolSlider.oninput = (e) => {
+      audio.volume = e.target.value;
+      if (volSlider) volSlider.value = e.target.value;
+    };
+  }
 
   // Default volume
   audio.volume = 0.5;
   volSlider.value = 0.5;
+  if (bpVolSlider) bpVolSlider.value = 0.5;
 
   // Studio Lights (Dark Mode)
   const darkModeToggle = document.getElementById('dark-mode-toggle');
@@ -788,6 +906,35 @@ function updateToneArm() {
   };
 
   // Global Player Events
+  const bpRepeat = document.getElementById('bp-repeat');
+  const bpShuffle = document.getElementById('bp-shuffle');
+  
+  if (bpRepeat) {
+    bpRepeat.onclick = () => {
+      isRepeat = !isRepeat;
+      bpRepeat.style.color = isRepeat ? '#fff' : '#777';
+    };
+  }
+
+  if (bpShuffle) {
+    bpShuffle.onclick = () => {
+      isShuffled = !isShuffled;
+      bpShuffle.style.color = isShuffled ? '#fff' : '#777';
+      if (isShuffled) {
+        // Basic shuffle logic: shuffle the remaining playlist
+        const current = playlist[currentIndex];
+        playlist.sort(() => Math.random() - 0.5);
+        currentIndex = playlist.findIndex(t => t.path === current.path);
+        updatePlaylistUI();
+      } else {
+        // Restore original order
+        const current = playlist[currentIndex];
+        playlist = [...masterPlaylist];
+        currentIndex = playlist.findIndex(t => t.path === current.path);
+        updatePlaylistUI();
+      }
+    };
+  }
   if (bpPlay) bpPlay.onclick = togglePlay;
   if (bpPrev) bpPrev.onclick = () => {
     if (currentIndex > 0) {
@@ -805,15 +952,27 @@ function updateToneArm() {
   const bpTogglePlayer = document.getElementById('bp-toggle-player');
   if (bpTogglePlayer) {
     bpTogglePlayer.onclick = () => {
-      // Toggle between Player and Home
+      // Toggle between Player and previous view
       if (playerView.classList.contains('hidden')) {
-        homeView.classList.add('hidden');
+        if (!homeView.classList.contains('hidden')) previousView = 'home';
+        else if (!libraryView.classList.contains('hidden')) previousView = 'library';
+        
+        if (homeView) homeView.classList.add('hidden');
+        if (libraryView) libraryView.classList.add('hidden');
         playerView.classList.remove('hidden');
         if (navHome) navHome.classList.remove('active');
+        if (navLibrary) navLibrary.classList.remove('active');
+        bpTogglePlayer.innerText = '▼';
       } else {
         playerView.classList.add('hidden');
-        homeView.classList.remove('hidden');
-        if (navHome) navHome.classList.add('active');
+        if (previousView === 'library') {
+          if (libraryView) libraryView.classList.remove('hidden');
+          if (navLibrary) navLibrary.classList.add('active');
+        } else {
+          if (homeView) homeView.classList.remove('hidden');
+          if (navHome) navHome.classList.add('active');
+        }
+        bpTogglePlayer.innerText = '▲';
       }
     };
   }
@@ -822,8 +981,10 @@ function updateToneArm() {
   if (navHome) {
     navHome.onclick = (e) => {
       e.preventDefault();
-      playerView.classList.add('hidden');
-      homeView.classList.remove('hidden');
+      if (playerView) playerView.classList.add('hidden');
+      if (libraryView) libraryView.classList.add('hidden');
+      if (homeView) homeView.classList.remove('hidden');
+      
       navHome.classList.add('active');
       if (navLibrary) navLibrary.classList.remove('active');
     };
@@ -831,7 +992,10 @@ function updateToneArm() {
   if (navLibrary) {
     navLibrary.onclick = (e) => {
       e.preventDefault();
-      // Future library implementation
+      if (playerView) playerView.classList.add('hidden');
+      if (homeView) homeView.classList.add('hidden');
+      if (libraryView) libraryView.classList.remove('hidden');
+      
       navLibrary.classList.add('active');
       if (navHome) navHome.classList.remove('active');
     };
