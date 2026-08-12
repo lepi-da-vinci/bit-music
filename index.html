@@ -41,8 +41,10 @@
       </div>
     </div>
 
-    <!-- PLAYER PANEL -->
-    <div class="panel player-panel" id="player-panel">
+    <!-- CENTER COLUMN -->
+    <div class="center-column">
+      <!-- PLAYER PANEL -->
+      <div class="panel player-panel" id="player-panel">
       <!-- Player Chassis (Image) -->
       <img src="assets/turntable_base.png" class="turntable-base" alt="Chassis">
 
@@ -76,15 +78,19 @@
         </div>
       </div>
 
-      <!-- Progress Bar -->
-      <div class="progress-container">
-        <div class="progress-bar-bg" id="progress-bg">
-          <div class="progress-bar-fill" id="progress-fill"></div>
-          <div class="progress-bar-thumb" id="progress-thumb"></div>
-        </div>
-        <div id="time-display" class="time-display">0:00</div>
       </div>
       
+      <!-- PROGRESS PANEL -->
+      <div class="panel progress-panel">
+        <div class="progress-container">
+          <div id="time-display" class="time-display">0:00</div>
+          <div class="progress-bar-bg" id="progress-bg">
+            <div class="progress-bar-fill" id="progress-fill"></div>
+            <div class="progress-bar-thumb" id="progress-thumb"></div>
+          </div>
+          <div id="time-duration" class="time-display">0:00</div>
+        </div>
+      </div>
     </div>
 
     <!-- MIXER PANEL -->
@@ -130,9 +136,10 @@
         </div>
 
         <!-- Master Volume -->
-        <div class="eq-band" style="height: 120px;">
-          <input type="range" id="vol-slider" class="pixel-slider-long" min="0" max="1" step="0.01" value="1">
-          <div class="pitch-label" style="position: absolute; bottom: -20px; left: -10px; right: -10px; text-align: center; font-size: 10px; color: var(--highlight); font-weight: bold;">VOL</div>
+        <div class="vol-fader-container">
+          <div class="vol-ticks"></div>
+          <input type="range" id="vol-slider" class="pixel-slider-master" min="0" max="1" step="0.01" value="1">
+          <div class="pitch-label" style="position: absolute; bottom: -20px; left: 0; right: 0; text-align: center; font-size: 11px; color: #ff3333; font-weight: bold; text-shadow: 1px 1px 0 #000;">VOL</div>
         </div>
       </div>
       

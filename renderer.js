@@ -406,6 +406,12 @@ function updateToneArm() {
     progressFill.style.width = `${pct * 100}%`;
     progressThumb.style.left = `${pct * 100}%`;
     timeDisplay.innerText = formatTime(audio.currentTime);
+    
+    const timeDuration = document.getElementById('time-duration');
+    if (timeDuration) {
+      timeDuration.innerText = formatTime(audio.duration);
+    }
+    
     updateToneArm();
   });
 
