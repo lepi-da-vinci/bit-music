@@ -73,10 +73,12 @@ ipcMain.handle('read-dir', async (event, dirPath) => {
         let title = f.replace(/\.[^/.]+$/, "");
         let artist = "Unknown Artist";
         let genre = "Unknown";
+        let album = "Unknown Album";
         
         if (metadata && metadata.common) {
           if (metadata.common.title) title = metadata.common.title;
           if (metadata.common.artist) artist = metadata.common.artist;
+          if (metadata.common.album) album = metadata.common.album;
           if (metadata.common.genre && metadata.common.genre.length > 0) {
             genre = metadata.common.genre[0]; // Take the primary genre
           }
@@ -91,6 +93,7 @@ ipcMain.handle('read-dir', async (event, dirPath) => {
           filename: f,
           title: title,
           artist: artist,
+          album: album,
           genre: genre,
           coverBase64: coverBase64
         });

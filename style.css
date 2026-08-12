@@ -19,6 +19,10 @@ body.dark-mode {
   src: local('Consolas'), local('Courier New');
 }
 
+* {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -54,11 +58,13 @@ body {
 /* App Layout */
 .app-container {
   display: flex;
-  justify-content: center;
+  justify-content: space-evenly;
   align-items: center;
   height: 100vh;
-  gap: 20px;
-  padding: 20px;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 40px;
   box-sizing: border-box;
 }
 
@@ -73,13 +79,39 @@ body {
   border: 1px solid rgba(255,255,255,0.05);
 }
 
-.album-panel { width: 220px; padding: 15px; }
-.playlist-panel { width: 250px; padding: 15px; }
+.library-panel {
+  width: 280px;
+  height: 80vh;
+  max-height: 700px;
+  min-height: 410px;
+}
+
+.album-panel { 
+  width: 100%; 
+  flex: 0 0 180px; 
+  padding: 15px; 
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.4);
+}
+.playlist-panel { 
+  width: 100%; 
+  flex: 1; 
+  padding: 15px; 
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
 .player-panel { 
-  width: 380px; 
+  width: 380px;
+  height: 380px;
+  flex-shrink: 0;
   background: transparent; 
   border: none;
   box-shadow: none;
+  transform: scale(1.35);
+  margin: 0 60px;
 }
 
 .album-panel h2 {
@@ -249,7 +281,7 @@ body {
 /* Controls */
 .controls {
   position: absolute;
-  bottom: 55px; left: 30px;
+  bottom: 25px; left: 30px;
   z-index: 10;
   display: flex;
   align-items: center;
@@ -265,18 +297,51 @@ body {
 
 /* Volume Slider */
 .volume-container {
-  position: absolute;
-  top: 145px; right: 20px;
+  position: relative;
   width: 26px; height: 120px;
-  z-index: 10;
 }
 
 .mixer-panel { 
-  width: 140px; 
-  padding: 15px; 
+  width: 280px; 
+  padding: 25px 15px; 
   align-items: center;
   z-index: 20;
+  height: 80vh;
+  max-height: 700px;
+  min-height: 410px;
+  justify-content: space-around;
 }
+
+/* VU Meter */
+.vu-meter-container {
+  display: flex;
+  gap: 8px;
+  height: 100px;
+  padding: 5px;
+  background: #111;
+  border-radius: 4px;
+  border: 2px solid #222;
+  border-right-color: #444;
+  border-bottom-color: #444;
+}
+.vu-channel {
+  display: flex;
+  flex-direction: column-reverse; /* LEDs light from bottom to top */
+  gap: 2px;
+  height: 100%;
+}
+.vu-led {
+  width: 8px;
+  flex-grow: 1;
+  background: #333;
+  border-radius: 1px;
+  opacity: 0.3;
+  box-shadow: none;
+  transition: opacity 0.05s ease, background 0.05s ease;
+}
+.vu-led.active.green { background: #0f0; opacity: 1; box-shadow: 0 0 5px #0f0; }
+.vu-led.active.yellow { background: #ff0; opacity: 1; box-shadow: 0 0 5px #ff0; }
+.vu-led.active.red { background: #f00; opacity: 1; box-shadow: 0 0 5px #f00; }
 .mixer-panel h2 {
   margin-top: 0;
   color: var(--gold);
@@ -328,19 +393,7 @@ body {
   font-weight: bold;
 }
 
-/* Pixel Art Switches */
-.switch-container {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  z-index: 100;
-}
-.lofi-switch {
-  top: 50px;
-}
+
 .switch-label {
   font-size: 10px;
   color: var(--gold);
@@ -422,42 +475,55 @@ input[type=range].pixel-slider::-webkit-slider-runnable-track {
   border-bottom-color: #000;
 }
 
-.vol-slider-bg {
+input[type=range].pixel-slider-long {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 120px; height: 16px;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid #333;
+  outline: none;
+  transform: rotate(-90deg);
+  transform-origin: center;
   position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  image-rendering: pixelated;
+  top: 52px;
+  left: -50px;
 }
-.vol-knob {
-  position: absolute;
-  left: 0; /* Center in the 26px track */
-  top: 50%;
-  width: 26px;
-  image-rendering: pixelated;
-  z-index: 10;
-  pointer-events: none;
-  transform: translateY(-50%);
-}
-/* Vertical Range Slider */
-input[type=range].vol-slider-input,
-#vol-slider {
-  appearance: slider-vertical;
-  -webkit-appearance: slider-vertical;
-  width: 26px; height: 120px;
-  background: transparent;
-  position: absolute;
-  top: 0; left: 0;
-  margin: 0;
-  opacity: 0; /* Hide native slider, but keep functional */
+input[type=range].pixel-slider-long::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 24px;
+  background-color: #7a7a7a;
+  border: 2px solid #000;
+  border-right-color: #333;
+  border-bottom-color: #333;
+  box-shadow: inset 2px 2px 0px #b5b5b5, inset -2px -2px 0px #4d4d4d;
   cursor: pointer;
-  z-index: 11;
+  margin-top: -5px;
 }
-/* If opacity 0 is used, we need to draw the custom knob in JS or CSS. Let's make it simple */
+input[type=range].pixel-slider-long::-moz-range-thumb {
+  width: 12px;
+  height: 24px;
+  background-color: #7a7a7a;
+  border: 2px solid #000;
+  border-right-color: #333;
+  border-bottom-color: #333;
+  box-shadow: inset 2px 2px 0px #b5b5b5, inset -2px -2px 0px #4d4d4d;
+  cursor: pointer;
+}
+input[type=range].pixel-slider-long::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 8px;
+  background: #111;
+  border: 2px solid #333;
+  border-right-color: #000;
+  border-bottom-color: #000;
+}
 
 /* Progress Bar */
 .progress-container {
   position: absolute;
-  bottom: 25px; left: 30px;
+  bottom: 8px; left: 30px;
   width: 320px; height: 6px;
   z-index: 10;
   display: flex;

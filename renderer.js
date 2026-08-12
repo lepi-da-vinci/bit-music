@@ -1,5 +1,6 @@
 try {
 
+  let masterPlaylist = [];
   let playlist = [];
   let currentIndex = -1;
   let isPlaying = false;
@@ -16,7 +17,6 @@ try {
   const progressFill = document.getElementById('progress-fill');
   const progressThumb = document.getElementById('progress-thumb');
   const volSlider = document.getElementById('vol-slider');
-  const volKnob = document.getElementById('vol-knob');
   const lcdTitle = document.getElementById('lcd-title');
   const lcdArtist = document.getElementById('lcd-artist');
   const playlistContainer = document.getElementById('playlist-list');
@@ -33,6 +33,7 @@ try {
   let dataArray;
   let source;
   let bassFilter, midFilter, trebFilter;
+  let delayNode, feedbackGain, echoMix;
 
   function initAudioVisualizer() {
     if (audioCtx) return;
@@ -59,6 +60,19 @@ try {
     
     source = audioCtx.createMediaElementSource(audio);
     
+    // Delay Node for Echo
+    delayNode = audioCtx.createDelay(1.0);
+    delayNode.delayTime.value = 0.4;
+    feedbackGain = audioCtx.createGain();
+    feedbackGain.gain.value = 0.3;
+    echoMix = audioCtx.createGain();
+    echoMix.gain.value = document.getElementById('fx-echo').value;
+    
+    delayNode.connect(feedbackGain);
+    feedbackGain.connect(delayNode);
+    delayNode.connect(echoMix);
+    echoMix.connect(audioCtx.destination);
+    
     // Chain: Source -> EQ -> Analyser -> Destination
     source.connect(bassFilter);
     bassFilter.connect(midFilter);
@@ -66,10 +80,27 @@ try {
     trebFilter.connect(analyser);
     analyser.connect(audioCtx.destination);
     
+    // Send EQ output to Delay Node as well
+    trebFilter.connect(delayNode);
+    
     dataArray = new Uint8Array(analyser.frequencyBinCount);
 
     const canvas = document.getElementById('lcd-canvas');
     const ctx = canvas.getContext('2d');
+    
+    // Setup VU Meter LEDs
+    const vuL = document.getElementById('vu-l');
+    const vuR = document.getElementById('vu-r');
+    if (vuL && vuR) {
+      vuL.innerHTML = ''; vuR.innerHTML = '';
+      for (let i = 0; i < 10; i++) {
+        let color = 'green';
+        if (i > 6) color = 'yellow';
+        if (i > 8) color = 'red';
+        vuL.innerHTML += `<div class="vu-led ${color}"></div>`;
+        vuR.innerHTML += `<div class="vu-led ${color}"></div>`;
+      }
+    }
     
     function renderFrame() {
       requestAnimationFrame(renderFrame);
@@ -137,7 +168,35 @@ try {
 
       // Calculate intensity 0-1
       const intensity = Math.pow(bass / 255, 2);
+      
+      // Update VU Meters
+      let overallL = 0;
+      let overallR = 0;
+      for (let i = 0; i < dataArray.length; i++) {
+        if (i % 2 === 0) overallL += dataArray[i];
+        else overallR += dataArray[i];
+      }
+      overallL = (overallL / (dataArray.length / 2)) / 255;
+      overallR = (overallR / (dataArray.length / 2)) / 255;
+      
+      // Boost it a bit for visual impact
+      overallL = Math.min(1, overallL * 1.5);
+      overallR = Math.min(1, overallR * 1.5);
+      
+      if (vuL && vuR) {
+        const ledsL = vuL.children;
+        const ledsR = vuR.children;
+        for (let i = 0; i < 10; i++) {
+          if (overallL * 10 > i) ledsL[i].classList.add('active');
+          else ledsL[i].classList.remove('active');
+          
+          if (overallR * 10 > i) ledsR[i].classList.add('active');
+          else ledsR[i].classList.remove('active');
+        }
+      }
+
       const track = playlist[currentIndex];
+      if (!track) return;
       const col = rgbColors[track.vinylColor] || '255,255,255';
 
       // Apply glow
@@ -157,25 +216,66 @@ try {
     try {
       const result = await window.api.readDir('music');
       if (result.success) {
-        playlist = result.files.map(f => ({
+        masterPlaylist = result.files.map(f => ({
           filename: f.filename,
           path: window.api.getMusicPath(f.filename),
           title: f.title || f.filename.replace(/\.[^/.]+$/, ""),
           artist: f.artist || "Unknown Artist",
           genre: f.genre || "Unknown",
+          album: f.album || "Unknown Album",
           coverBase64: f.coverBase64,
           vinylColor: vinylColors[Math.floor(Math.random() * vinylColors.length)]
         }));
 
-        // Render default Album
+        playlist = [...masterPlaylist];
+
+        // Group by Album
+        const albumMap = {};
+        masterPlaylist.forEach(t => {
+          if (!albumMap[t.album]) albumMap[t.album] = [];
+          albumMap[t.album].push(t);
+        });
+
+        // Render Albums
         const albumContainer = document.getElementById('album-list');
         if (albumContainer) {
           albumContainer.innerHTML = `
-          <div class="album-item active">
+          <div class="album-item active" data-album="all">
             <div class="album-title">All Tracks</div>
-            <div class="album-tracks">${playlist.length} tracks</div>
+            <div class="album-tracks">${masterPlaylist.length} tracks</div>
           </div>
-        `;
+          `;
+          
+          Object.keys(albumMap).forEach(albumName => {
+            const tracks = albumMap[albumName];
+            albumContainer.innerHTML += `
+            <div class="album-item" data-album="${albumName}">
+              <div class="album-title">${albumName}</div>
+              <div class="album-tracks">${tracks.length} tracks</div>
+            </div>
+            `;
+          });
+          
+          // Bind clicks
+          document.querySelectorAll('.album-item').forEach(el => {
+            el.onclick = () => {
+              document.querySelectorAll('.album-item').forEach(a => a.classList.remove('active'));
+              el.classList.add('active');
+              
+              const selectedAlbum = el.getAttribute('data-album');
+              if (selectedAlbum === 'all') {
+                playlist = [...masterPlaylist];
+              } else {
+                playlist = albumMap[selectedAlbum];
+              }
+              
+              renderPlaylist();
+              if (playlist.length > 0) {
+                loadTrack(0);
+                playTrack();
+              }
+            };
+          });
         }
 
         renderPlaylist();
@@ -534,17 +634,20 @@ function updateToneArm() {
   document.getElementById('eq-treb').oninput = (e) => {
     if (trebFilter) trebFilter.gain.value = e.target.value;
   };
+  
+  // Echo FX
+  document.getElementById('fx-echo').oninput = (e) => {
+    if (echoMix) echoMix.gain.value = e.target.value;
+  };
 
   // Volume
   volSlider.oninput = (e) => {
     audio.volume = e.target.value;
-    const pct = e.target.value;
-    volKnob.style.top = `${(1 - pct) * 100}%`;
   };
 
   // Default volume
   audio.volume = 0.5;
-  volKnob.style.top = '50%';
+  volSlider.value = 0.5;
 
   // Studio Lights (Dark Mode)
   const darkModeToggle = document.getElementById('dark-mode-toggle');

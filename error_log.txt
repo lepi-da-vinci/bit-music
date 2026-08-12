@@ -1,3 +1,3 @@
-Init Error: Cannot set properties of null (setting 'oninput')
-TypeError: Cannot set properties of null (setting 'oninput')
-    at file:///D:/Kuliah/Projek/music-app/renderer.js:512:21
+Init Error: Cannot read properties of null (reading 'style')
+TypeError: Cannot read properties of null (reading 'style')
+    at file:///D:/Kuliah/Projek/music-app/renderer.js:653:11
