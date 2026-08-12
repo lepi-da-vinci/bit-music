@@ -20,6 +20,20 @@ try {
   const lcdTitle = document.getElementById('lcd-title');
   const lcdArtist = document.getElementById('lcd-artist');
   const playlistContainer = document.getElementById('playlist-list');
+  
+  // New Layout & Global Player Elements
+  const bpPrev = document.getElementById('bp-prev');
+  const bpPlay = document.getElementById('bp-play');
+  const bpNext = document.getElementById('bp-next');
+  const bpTime = document.getElementById('bp-time');
+  const bpTitle = document.getElementById('bp-title');
+  const bpArtist = document.getElementById('bp-artist');
+  const bpArt = document.getElementById('bp-album-art');
+  const homeView = document.getElementById('home-view');
+  const playerView = document.getElementById('player-view');
+  const homeAlbums = document.getElementById('home-albums');
+  const navHome = document.getElementById('nav-home');
+  const navLibrary = document.getElementById('nav-library');
 
   const vinylColors = ['red', 'blue', 'green', 'purple', 'orange', 'teal'];
   const rgbColors = {
@@ -254,7 +268,40 @@ try {
               <div class="album-tracks">${tracks.length} tracks</div>
             </div>
             `;
+            
+            // Populate Home Carousel
+            if (homeAlbums) {
+              const cover = tracks[0].coverBase64 ? `url('${tracks[0].coverBase64}')` : '#222';
+              homeAlbums.innerHTML += `
+              <div class="album-card" data-album="${albumName}">
+                <div class="album-card-art" style="background: ${cover}; background-size: cover; background-position: center;"></div>
+                <div class="album-card-title">${albumName}</div>
+                <div class="album-card-artist">${tracks[0].artist}</div>
+              </div>
+              `;
+            }
           });
+          
+          // Bind clicks for Home Carousel
+          if (homeAlbums) {
+            document.querySelectorAll('.album-card').forEach(el => {
+              el.onclick = () => {
+                const selectedAlbum = el.getAttribute('data-album');
+                playlist = albumMap[selectedAlbum];
+                
+                // Switch to Player View
+                if (homeView) homeView.classList.add('hidden');
+                if (playerView) playerView.classList.remove('hidden');
+                if (navHome) navHome.classList.remove('active');
+                
+                renderPlaylist();
+                if (playlist.length > 0) {
+                  loadTrack(0);
+                  playTrack();
+                }
+              };
+            });
+          }
           
           // Bind clicks
           document.querySelectorAll('.album-item').forEach(el => {
@@ -344,6 +391,17 @@ try {
       albumArt.style.display = 'none';
     }
 
+    // Update global bottom player
+    if (bpTitle) bpTitle.innerText = track.title;
+    if (bpArtist) bpArtist.innerText = track.artist;
+    if (bpArt) {
+      if (track.coverBase64) {
+        bpArt.style.backgroundImage = `url('${track.coverBase64}')`;
+      } else {
+        bpArt.style.backgroundImage = 'none';
+      }
+    }
+
     // Vinyl change animation
     vinylDisc.style.opacity = 0;
     setTimeout(() => {
@@ -368,6 +426,7 @@ try {
     if (audio.paused) audio.play();
     isPlaying = true;
     playBtnIcon.src = window.api.getAssetPath('btn_start_stop_active.png');
+    if (bpPlay) bpPlay.innerText = '⏸';
     updateToneArm();
   }
 
@@ -376,6 +435,7 @@ try {
     audio.pause();
     currentPlaybackRate = 0;
     playBtnIcon.src = window.api.getAssetPath('btn_start_stop.png');
+    if (bpPlay) bpPlay.innerText = '▶';
     toneArm.style.transform = 'rotate(-32deg) scale(0.8)';
   }
 
@@ -410,6 +470,10 @@ function updateToneArm() {
     const timeDuration = document.getElementById('time-duration');
     if (timeDuration) {
       timeDuration.innerText = formatTime(audio.duration);
+    }
+    
+    if (bpTime && audio.duration) {
+      bpTime.innerText = `${formatTime(audio.currentTime)} / ${formatTime(audio.duration)}`;
     }
     
     updateToneArm();
@@ -722,6 +786,56 @@ function updateToneArm() {
       startLofiNoise();
     }
   };
+
+  // Global Player Events
+  if (bpPlay) bpPlay.onclick = togglePlay;
+  if (bpPrev) bpPrev.onclick = () => {
+    if (currentIndex > 0) {
+      loadTrack(currentIndex - 1);
+      playTrack();
+    }
+  };
+  if (bpNext) bpNext.onclick = () => {
+    if (currentIndex < playlist.length - 1) {
+      loadTrack(currentIndex + 1);
+      playTrack();
+    }
+  };
+  
+  const bpTogglePlayer = document.getElementById('bp-toggle-player');
+  if (bpTogglePlayer) {
+    bpTogglePlayer.onclick = () => {
+      // Toggle between Player and Home
+      if (playerView.classList.contains('hidden')) {
+        homeView.classList.add('hidden');
+        playerView.classList.remove('hidden');
+        if (navHome) navHome.classList.remove('active');
+      } else {
+        playerView.classList.add('hidden');
+        homeView.classList.remove('hidden');
+        if (navHome) navHome.classList.add('active');
+      }
+    };
+  }
+
+  // Navigation Routing
+  if (navHome) {
+    navHome.onclick = (e) => {
+      e.preventDefault();
+      playerView.classList.add('hidden');
+      homeView.classList.remove('hidden');
+      navHome.classList.add('active');
+      if (navLibrary) navLibrary.classList.remove('active');
+    };
+  }
+  if (navLibrary) {
+    navLibrary.onclick = (e) => {
+      e.preventDefault();
+      // Future library implementation
+      navLibrary.classList.add('active');
+      if (navHome) navHome.classList.remove('active');
+    };
+  }
 
   // Start
   loadMusic();

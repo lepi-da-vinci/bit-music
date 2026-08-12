@@ -10,166 +10,234 @@
   <!-- Starry Background -->
   <div id="stars-container"></div>
 
-
-  <div class="app-container">
-    
-    <!-- LIBRARY CONTAINER (Left Pillar) -->
-    <div class="panel library-panel">
-      <!-- ALBUMS PANEL -->
-      <div class="album-panel">
-        <h2>Albums</h2>
-        <div id="album-list" class="scroll-container">
-          <!-- Injected via JS -->
-        </div>
+  <div class="app-layout">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <span style="color:#ff0000; font-size:24px; vertical-align: middle;">▶</span> <span class="pixel-text">Music</span>
       </div>
+      <nav class="sidebar-nav">
+        <a href="#" class="nav-item active" id="nav-home">
+          <img src="file:///C:/Users/muham/.gemini/antigravity-ide/brain/d32b0767-6ff0-4cf6-a140-cabc35221915/icon_home_png_1786544148674.png" onerror="this.style.display='none'">
+          <span>Beranda</span>
+        </a>
+        <a href="#" class="nav-item" id="nav-explore">
+          <img src="file:///C:/Users/muham/.gemini/antigravity-ide/brain/d32b0767-6ff0-4cf6-a140-cabc35221915/icon_explore_png_1786544234427.png" onerror="this.style.display='none'">
+          <span>Eksplorasi</span>
+        </a>
+        <a href="#" class="nav-item" id="nav-library">
+          <img src="file:///C:/Users/muham/.gemini/antigravity-ide/brain/d32b0767-6ff0-4cf6-a140-cabc35221915/icon_library_png_1786544256834.png" onerror="this.style.display='none'">
+          <span>Koleksi</span>
+        </a>
+      </nav>
+    </aside>
 
-      <!-- PLAYLIST PANEL -->
-      <div class="playlist-panel">
-        <div class="lcd-display">
-          <canvas id="lcd-canvas"></canvas>
-          <div class="lcd-content">
-            <div class="marquee-container">
-              <div id="lcd-title" class="lcd-text marquee-text">Loading...</div>
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+      
+      <!-- HOME VIEW -->
+      <div id="home-view" class="view-container active">
+        <div class="top-bar">
+          <div class="search-bar">
+            <span class="search-icon">🔍</span>
+            <input type="text" placeholder="Telusuri lagu, album, artis...">
+          </div>
+        </div>
+        <div class="mood-chips">
+          <button class="mood-chip">Sedih</button>
+          <button class="mood-chip">Tidur</button>
+          <button class="mood-chip">Bersantai</button>
+          <button class="mood-chip">Senang</button>
+          <button class="mood-chip">Olahraga</button>
+          <button class="mood-chip">Fokus</button>
+        </div>
+        
+        <div class="carousel-section">
+          <div class="section-header">
+            <img src="assets/vinyl_red.png" width="40" height="40" style="border-radius:50%;">
+            <div>
+              <div class="section-subtitle">RETRO GROOVE</div>
+              <h2 class="section-title">Dengarkan lagi</h2>
             </div>
-            <div id="lcd-artist" class="lcd-subtext"></div>
           </div>
-        </div>
-        
-        <div id="playlist-list" class="scroll-container">
-          <!-- Injected via JS -->
-        </div>
-      </div>
-    </div>
-
-    <!-- CENTER COLUMN -->
-    <div class="center-column">
-      <!-- PLAYER PANEL -->
-      <div class="panel player-panel" id="player-panel">
-      <!-- Player Chassis (Image) -->
-      <img src="assets/turntable_base.png" class="turntable-base" alt="Chassis">
-
-
-      <!-- Platter Base -->
-      <img src="assets/empty_platter.png" class="platter-base" alt="Platter">
-      
-      <!-- Vinyl Container (Spins) -->
-      <div id="vinyl-container" class="vinyl-container">
-        <img id="vinyl-disc" src="assets/vinyl_red.png" class="vinyl-disc" alt="Vinyl">
-        <div id="album-art" class="album-art"></div>
-        <div class="spindle"></div>
-      </div>
-
-      <!-- Tone Arm -->
-      <img id="tone-arm" src="assets/tone_arm.png" class="tone-arm" alt="Tone Arm">
-
-
-      <!-- Playback Controls -->
-      <div class="controls">
-        <button id="btn-play" class="control-btn"><img id="icon-play" src="assets/btn_start_stop.png"></button>
-        <button id="btn-prev" class="control-btn small"><img src="assets/btn_prev.png"></button>
-        <button id="btn-shuffle" class="control-btn small"><img id="icon-shuffle" src="assets/btn_shuffle.png"></button>
-        <button id="btn-repeat" class="control-btn small"><img id="icon-repeat" src="assets/btn_repeat.png"></button>
-        <button id="btn-next" class="control-btn small"><img src="assets/btn_next.png"></button>
-        
-        <!-- Speeds -->
-        <div style="display: flex; gap: 12px; align-items: center; margin-left: 15px; margin-top: 5px;">
-          <span class="speed-text" id="btn-speed-33" style="cursor:pointer; color: var(--gold); font-size: 11px; font-weight: bold;">33</span>
-          <span class="speed-text" id="btn-speed-45" style="cursor:pointer; color: #8c91a0; font-size: 11px; font-weight: bold;">45</span>
+          <div class="carousel" id="home-albums">
+            <!-- Injected by JS -->
+          </div>
         </div>
       </div>
 
-      </div>
-      
-      <!-- PROGRESS PANEL -->
-      <div class="panel progress-panel">
-        <div class="progress-container">
-          <div id="time-display" class="time-display">0:00</div>
-          <div class="progress-bar-bg" id="progress-bg">
-            <div class="progress-bar-fill" id="progress-fill"></div>
-            <div class="progress-bar-thumb" id="progress-thumb"></div>
-          </div>
-          <div id="time-duration" class="time-display">0:00</div>
-        </div>
-      </div>
-    </div>
+      <!-- PLAYER VIEW (Original Layout) -->
+      <div id="player-view" class="view-container hidden">
+        <div class="app-container">
+          
+          <!-- LIBRARY CONTAINER (Left Pillar) -->
+          <div class="panel library-panel">
+            <!-- ALBUMS PANEL -->
+            <div class="album-panel">
+              <h2>Albums</h2>
+              <div id="album-list" class="scroll-container">
+                <!-- Injected via JS -->
+              </div>
+            </div>
 
-    <!-- MIXER PANEL -->
-    <div class="panel mixer-panel">
-      <h2>MIXER</h2>
-      <div style="display: flex; gap: 20px; align-items: center; width: 100%; justify-content: center;">
-        <div class="eq-container" style="margin-bottom: 0;">
-          <!-- 3-Band EQ -->
-          <div class="eq-band">
-            <div class="eq-label">BASS</div>
-            <input type="range" id="eq-bass" class="pixel-slider" min="-20" max="20" step="1" value="0">
-          </div>
-          <div class="eq-band">
-            <div class="eq-label">MID</div>
-            <input type="range" id="eq-mid" class="pixel-slider" min="-20" max="20" step="1" value="0">
-          </div>
-          <div class="eq-band">
-            <div class="eq-label">TREB</div>
-            <input type="range" id="eq-treb" class="pixel-slider" min="-20" max="20" step="1" value="0">
+            <!-- PLAYLIST PANEL -->
+            <div class="playlist-panel">
+              <div class="lcd-display">
+                <canvas id="lcd-canvas"></canvas>
+                <div class="lcd-content">
+                  <div class="marquee-container">
+                    <div id="lcd-title" class="lcd-text marquee-text">Loading...</div>
+                  </div>
+                  <div id="lcd-artist" class="lcd-subtext"></div>
+                </div>
+              </div>
+              
+              <div id="playlist-list" class="scroll-container">
+                <!-- Injected via JS -->
+              </div>
+            </div>
           </div>
 
-          <!-- Echo FX -->
-          <div class="eq-band">
-            <div class="eq-label" style="color: #64ff78;">ECHO</div>
-            <input type="range" id="fx-echo" class="pixel-slider" min="0" max="1" step="0.05" value="0">
+          <!-- CENTER COLUMN -->
+          <div class="center-column">
+            <!-- PLAYER PANEL -->
+            <div class="panel player-panel" id="player-panel">
+              <img src="assets/turntable_base.png" class="turntable-base" alt="Chassis">
+              <img src="assets/empty_platter.png" class="platter-base" alt="Platter">
+              
+              <div id="vinyl-container" class="vinyl-container">
+                <img id="vinyl-disc" src="assets/vinyl_red.png" class="vinyl-disc" alt="Vinyl">
+                <div id="album-art" class="album-art"></div>
+                <div class="spindle"></div>
+              </div>
+
+              <img id="tone-arm" src="assets/tone_arm.png" class="tone-arm" alt="Tone Arm">
+
+              <!-- Playback Controls -->
+              <div class="controls">
+                <button id="btn-play" class="control-btn"><img id="icon-play" src="assets/btn_start_stop.png"></button>
+                <button id="btn-prev" class="control-btn small"><img src="assets/btn_prev.png"></button>
+                <button id="btn-shuffle" class="control-btn small"><img id="icon-shuffle" src="assets/btn_shuffle.png"></button>
+                <button id="btn-repeat" class="control-btn small"><img id="icon-repeat" src="assets/btn_repeat.png"></button>
+                <button id="btn-next" class="control-btn small"><img src="assets/btn_next.png"></button>
+                
+                <!-- Speeds -->
+                <div style="display: flex; gap: 12px; align-items: center; margin-left: 15px; margin-top: 5px;">
+                  <span class="speed-text" id="btn-speed-33" style="cursor:pointer; color: var(--gold); font-size: 11px; font-weight: bold;">33</span>
+                  <span class="speed-text" id="btn-speed-45" style="cursor:pointer; color: #8c91a0; font-size: 11px; font-weight: bold;">45</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- PROGRESS PANEL -->
+            <div class="panel progress-panel">
+              <div class="progress-container">
+                <div id="time-display" class="time-display">0:00</div>
+                <div class="progress-bar-bg" id="progress-bg">
+                  <div class="progress-bar-fill" id="progress-fill"></div>
+                  <div class="progress-bar-thumb" id="progress-thumb"></div>
+                </div>
+                <div id="time-duration" class="time-display">0:00</div>
+              </div>
+            </div>
           </div>
 
-          <!-- Pitch Fader -->
-          <div class="pitch-container">
-            <div class="pitch-label">PITCH</div>
-            <input type="range" id="pitch-slider" class="pixel-slider" min="0.8" max="1.2" step="0.01" value="1.0">
-          </div>
-        </div>
-        
-        <!-- VU Meter -->
-        <div class="vu-meter-container">
-          <div class="vu-channel" id="vu-l">
-            <!-- LEDs will be injected by JS -->
-          </div>
-          <div class="vu-channel" id="vu-r">
-            <!-- LEDs will be injected by JS -->
-          </div>
-        </div>
+          <!-- MIXER PANEL -->
+          <div class="panel mixer-panel">
+            <h2>MIXER</h2>
+            <div style="display: flex; gap: 20px; align-items: center; width: 100%; justify-content: center;">
+              <div class="eq-container" style="margin-bottom: 0;">
+                <div class="eq-band">
+                  <div class="eq-label">BASS</div>
+                  <input type="range" id="eq-bass" class="pixel-slider" min="-20" max="20" step="1" value="0">
+                </div>
+                <div class="eq-band">
+                  <div class="eq-label">MID</div>
+                  <input type="range" id="eq-mid" class="pixel-slider" min="-20" max="20" step="1" value="0">
+                </div>
+                <div class="eq-band">
+                  <div class="eq-label">TREB</div>
+                  <input type="range" id="eq-treb" class="pixel-slider" min="-20" max="20" step="1" value="0">
+                </div>
+                <div class="eq-band">
+                  <div class="eq-label" style="color: #64ff78;">ECHO</div>
+                  <input type="range" id="fx-echo" class="pixel-slider" min="0" max="1" step="0.05" value="0">
+                </div>
+                <div class="pitch-container">
+                  <div class="pitch-label">PITCH</div>
+                  <input type="range" id="pitch-slider" class="pixel-slider" min="0.8" max="1.2" step="0.01" value="1.0">
+                </div>
+              </div>
+              
+              <!-- VU Meter -->
+              <div class="vu-meter-container">
+                <div class="vu-channel" id="vu-l"></div>
+                <div class="vu-channel" id="vu-r"></div>
+              </div>
 
-        <!-- Master Volume -->
-        <div class="vol-fader-container">
-          <div class="vol-ticks"></div>
-          <input type="range" id="vol-slider" class="pixel-slider-master" min="0" max="1" step="0.01" value="1">
-          <div class="pitch-label" style="position: absolute; bottom: -20px; left: 0; right: 0; text-align: center; font-size: 11px; color: #ff3333; font-weight: bold; text-shadow: 1px 1px 0 #000;">VOL</div>
+              <!-- Master Volume -->
+              <div class="vol-fader-container">
+                <div class="vol-ticks"></div>
+                <input type="range" id="vol-slider" class="pixel-slider-master" min="0" max="1" step="0.01" value="1">
+                <div class="pitch-label" style="position: absolute; bottom: -20px; left: 0; right: 0; text-align: center; font-size: 11px; color: #ff3333; font-weight: bold; text-shadow: 1px 1px 0 #000;">VOL</div>
+              </div>
+            </div>
+            
+            <!-- Mixer Toggles -->
+            <div style="margin-top: 25px; display: flex; flex-direction: column; gap: 15px; align-items: center; justify-content: center; position: relative; z-index: 50; width: 100%;">
+              <div style="display: flex; align-items: center; gap: 10px; width: 150px;">
+                <label class="switch">
+                  <input type="checkbox" id="auto-mix-toggle">
+                  <span class="pixel-switch"></span>
+                </label>
+                <span class="switch-label" style="font-size: 11px;">AUTO MIX (GENRE)</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px; width: 150px;">
+                <label class="switch">
+                  <input type="checkbox" id="dark-mode-toggle" checked>
+                  <span class="pixel-switch"></span>
+                </label>
+                <span class="switch-label" style="font-size: 11px;">STUDIO LIGHTS</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px; width: 150px;">
+                <label class="switch">
+                  <input type="checkbox" id="lofi-toggle">
+                  <span class="pixel-switch"></span>
+                </label>
+                <span class="switch-label" style="font-size: 11px;">LO-FI DUST</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-      
-      <!-- Mixer Toggles -->
-      <div style="margin-top: 25px; display: flex; flex-direction: column; gap: 15px; align-items: center; justify-content: center; position: relative; z-index: 50; width: 100%;">
-        <div style="display: flex; align-items: center; gap: 10px; width: 150px;">
-          <label class="switch">
-            <input type="checkbox" id="auto-mix-toggle">
-            <span class="pixel-switch"></span>
-          </label>
-          <span class="switch-label" style="font-size: 11px;">AUTO MIX (GENRE)</span>
-        </div>
-        
-        <div style="display: flex; align-items: center; gap: 10px; width: 150px;">
-          <label class="switch">
-            <input type="checkbox" id="dark-mode-toggle" checked>
-            <span class="pixel-switch"></span>
-          </label>
-          <span class="switch-label" style="font-size: 11px;">STUDIO LIGHTS</span>
-        </div>
-        
-        <div style="display: flex; align-items: center; gap: 10px; width: 150px;">
-          <label class="switch">
-            <input type="checkbox" id="lofi-toggle">
-            <span class="pixel-switch"></span>
-          </label>
-          <span class="switch-label" style="font-size: 11px;">LO-FI DUST</span>
-        </div>
+    </main>
+
+    <!-- GLOBAL BOTTOM PLAYER -->
+    <footer class="bottom-player">
+      <!-- Left: Playback Controls & Progress -->
+      <div class="bp-left">
+        <button id="bp-prev" class="bp-btn">⏮</button>
+        <button id="bp-play" class="bp-btn play-btn">▶</button>
+        <button id="bp-next" class="bp-btn">⏭</button>
+        <span id="bp-time" class="bp-time">0:00 / 0:00</span>
       </div>
-    </div>
+
+      <!-- Center: Now Playing Info -->
+      <div class="bp-center">
+        <div id="bp-album-art" class="bp-art"></div>
+        <div class="bp-track-info">
+          <div id="bp-title" class="bp-title">No Track Selected</div>
+          <div id="bp-artist" class="bp-artist">-</div>
+        </div>
+        <button class="bp-btn small">👍</button>
+        <button class="bp-btn small">👎</button>
+      </div>
+
+      <!-- Right: Extra Controls -->
+      <div class="bp-right">
+        <button class="bp-btn small" id="bp-toggle-player">▲</button>
+      </div>
+    </footer>
   </div>
 
   <audio id="audio-player"></audio>
