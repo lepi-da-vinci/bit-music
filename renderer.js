@@ -246,21 +246,72 @@ try {
     renderFrame();
   }
 
+  // Procedural Pixel Art Generator
+  function generateProceduralCover(seedStr) {
+    let hash = 0;
+    for (let i = 0; i < seedStr.length; i++) {
+      hash = seedStr.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash);
+    
+    const palettes = [
+      ['#2b2b2b', '#e13c50', '#ffdc64', '#ffffff'], // Retro Groove
+      ['#1a1c2c', '#5d275d', '#b13e53', '#ef7d57'], // Sunset
+      ['#291814', '#743a36', '#b55945', '#ea8b54'], // Rust
+      ['#0f380f', '#306230', '#8bac0f', '#9bbc0f'], // Gameboy
+      ['#181425', '#404973', '#68aed4', '#c0cbdc'], // Ice
+      ['#2ce8f4', '#f038ff', '#ffeb3b', '#000000'], // Cyberpunk
+    ];
+    
+    const size = 16;
+    const cellSize = 16; 
+    let svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">';
+    
+    let seed = index;
+    const random = () => {
+      let x = Math.sin(seed++) * 10000;
+      return x - Math.floor(x);
+    };
+    
+    const palette = palettes[index % palettes.length];
+    svg += `<rect width="256" height="256" fill="${palette[0]}" />`;
+    
+    for (let y = 2; y < size - 2; y++) {
+      for (let x = 2; x < size / 2; x++) {
+        if (random() > 0.4) {
+          const color = palette[Math.floor(random() * (palette.length - 1)) + 1];
+          svg += `<rect x="${x * cellSize}" y="${y * cellSize}" width="${cellSize}" height="${cellSize}" fill="${color}" />`;
+          svg += `<rect x="${(size - 1 - x) * cellSize}" y="${y * cellSize}" width="${cellSize}" height="${cellSize}" fill="${color}" />`;
+        }
+      }
+    }
+    svg += '</svg>';
+    
+    return 'data:image/svg+xml;base64,' + window.btoa(svg);
+  }
+
   // Load Music Files
   async function loadMusic() {
     try {
       const result = await window.api.readDir('music');
       if (result.success) {
-        masterPlaylist = result.files.map(f => ({
-          filename: f.filename,
-          path: window.api.getMusicPath(f.filename),
-          title: f.title || f.filename.replace(/\.[^/.]+$/, ""),
-          artist: f.artist || "Unknown Artist",
-          genre: f.genre || "Unknown",
-          album: f.album || "Unknown Album",
-          coverBase64: f.coverBase64,
-          vinylColor: vinylColors[Math.floor(Math.random() * vinylColors.length)]
-        }));
+        masterPlaylist = result.files.map(f => {
+          const albumName = f.album || "Unknown Album";
+          const fallbackSeed = albumName !== "Unknown Album" ? albumName : (f.title || f.filename);
+          // Force pixel art covers for all tracks to maintain consistent retro aesthetic
+          const cover = generateProceduralCover(fallbackSeed);
+          
+          return {
+            filename: f.filename,
+            path: window.api.getMusicPath(f.filename),
+            title: f.title || f.filename.replace(/\.[^/.]+$/, ""),
+            artist: f.artist || "Unknown Artist",
+            genre: f.genre || "Unknown",
+            album: albumName,
+            coverBase64: cover,
+            vinylColor: vinylColors[Math.floor(Math.random() * vinylColors.length)]
+          };
+        });
 
         playlist = [...masterPlaylist];
 
