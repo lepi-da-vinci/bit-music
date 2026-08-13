@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="pixel-icons.css">
 </head>
 <body>
   <!-- Starry Background -->
@@ -42,7 +43,7 @@
       <div id="home-view" class="view-container active">
         <div class="top-bar">
           <div class="search-bar">
-            <span class="search-icon">🔍</span>
+            <span class="search-icon"><img class="pixel-icon" src="assets/icons/icon_search.svg"></span>
             <input type="text" placeholder="Telusuri lagu, album, artis...">
           </div>
         </div>
@@ -68,6 +69,51 @@
           </div>
         </div>
       </div>
+      <!-- EXPLORE VIEW -->
+      <div id="explore-view" class="view-container hidden" style="padding: 30px; overflow-y: auto;">
+        <div class="top-bar">
+          <div class="search-bar">
+            <span class="search-icon"><img class="pixel-icon" src="assets/icons/icon_search.svg"></span>
+            <input type="text" placeholder="Telusuri genre, artis, atau album...">
+          </div>
+        </div>
+        
+        <div class="carousel-section">
+          <div class="section-header">
+            <img src="assets/vinyl_red.png" width="40" height="40" style="border-radius:50%;">
+            <div>
+              <div class="section-subtitle">TERBARU & TERPANAS</div>
+              <h2 class="section-title">Rilis Baru</h2>
+            </div>
+          </div>
+          <div class="carousel" id="explore-new-releases">
+            <!-- Injected by JS -->
+          </div>
+        </div>
+        
+        <div class="carousel-section">
+          <div class="section-header">
+            <h2 class="section-title">Kategori & Genre Retro</h2>
+          </div>
+          <div class="genre-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px;">
+            <div class="genre-card" style="background: linear-gradient(135deg, #e13c50, #ffdc64);">Synthwave</div>
+            <div class="genre-card" style="background: linear-gradient(135deg, #1a1c2c, #5d275d);">8-Bit</div>
+            <div class="genre-card" style="background: linear-gradient(135deg, #0f380f, #8bac0f);">Chiptune</div>
+            <div class="genre-card" style="background: linear-gradient(135deg, #2ce8f4, #f038ff);">Vaporwave</div>
+            <div class="genre-card" style="background: linear-gradient(135deg, #b55945, #ea8b54);">Arcade</div>
+            <div class="genre-card" style="background: linear-gradient(135deg, #404973, #68aed4);">Dream Pop</div>
+          </div>
+        </div>
+        
+        <div class="carousel-section" style="margin-top: 40px; margin-bottom: 100px;">
+          <div class="section-header">
+            <h2 class="section-title">Sedang Tren</h2>
+          </div>
+          <div class="carousel" id="explore-trending">
+            <!-- Injected by JS -->
+          </div>
+        </div>
+      </div>
 
       <!-- LIBRARY VIEW -->
       <div id="library-view" class="view-container hidden" style="padding: 30px;">
@@ -86,7 +132,7 @@
           <div id="library-detail-bg" style="position: absolute; top: -30px; left: -30px; right: -30px; height: 500px; background: linear-gradient(to bottom, rgba(138,43,226,0.3) 0%, rgba(30,33,42,0) 100%); z-index: 0; pointer-events: none;"></div>
           
           <div style="position: relative; z-index: 1; flex-shrink: 0;">
-            <button id="btn-back-library" class="bp-btn" style="margin-bottom: 20px; width: auto; padding: 5px 15px; font-family: 'VT323', monospace; font-size: 20px; background: rgba(255,255,255,0.1); border-radius: 20px;">⬅ Kembali</button>
+            <button id="btn-back-library" class="bp-btn" style="margin-bottom: 20px; width: auto; padding: 5px 15px; font-family: 'VT323', monospace; font-size: 20px; background: rgba(255,255,255,0.1); border-radius: 20px;"><img class="pixel-icon" src="assets/icons/icon_back.svg"> Kembali</button>
             <div style="display: flex; gap: 30px; align-items: flex-end; margin-bottom: 20px;">
               <div id="library-detail-art" style="width: 250px; height: 250px; background-color: #222; background-size: cover; background-position: center; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);"></div>
               <div>
@@ -100,11 +146,11 @@
             
             <!-- Action Buttons -->
             <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 30px;">
-              <button id="btn-album-download" class="bp-btn" style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1);">⬇</button>
-              <button id="btn-album-edit" class="bp-btn" style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1);">✎</button>
-              <button id="library-detail-play" class="bp-btn" style="width: 60px; height: 60px; border-radius: 50%; background: #fff; color: #000; padding-left: 20px; font-size: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">▶</button>
-              <button id="btn-album-share" class="bp-btn" style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1);">➦</button>
-              <button id="btn-album-more" class="bp-btn" style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1);">⋮</button>
+              <button id="btn-album-download" class="bp-btn" style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1);"><img class="pixel-icon" src="assets/icons/icon_down.svg"></button>
+              <button id="btn-album-edit" class="bp-btn" style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1);"><img class="pixel-icon" src="assets/icons/icon_edit.svg"></button>
+              <button id="library-detail-play" class="bp-btn" style="width: 60px; height: 60px; border-radius: 50%; background: #fff; color: #000; padding-left: 20px; font-size: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);"><img class="pixel-icon" src="assets/icons/icon_play.svg" style="fill: #000; filter: invert(1);"></button>
+              <button id="btn-album-share" class="bp-btn" style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1);"><img class="pixel-icon" src="assets/icons/icon_share.svg"></button>
+              <button id="btn-album-more" class="bp-btn" style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1);"><img class="pixel-icon" src="assets/icons/icon_more.svg"></button>
             </div>
           </div>
           
@@ -274,9 +320,9 @@
     <footer class="bottom-player">
       <!-- Left: Playback Controls & Progress -->
       <div class="bp-left">
-        <button id="bp-prev" class="bp-btn">⏮</button>
-        <button id="bp-play" class="bp-btn play-btn">▶</button>
-        <button id="bp-next" class="bp-btn">⏭</button>
+        <button id="bp-prev" class="bp-btn"><img class="pixel-icon" src="assets/icons/icon_prev.svg"></button>
+        <button id="bp-play" class="bp-btn play-btn"><img class="pixel-icon" src="assets/icons/icon_play.svg"></button>
+        <button id="bp-next" class="bp-btn"><img class="pixel-icon" src="assets/icons/icon_next.svg"></button>
         <span id="bp-time" class="bp-time">0:00 / 0:00</span>
       </div>
 
@@ -287,19 +333,19 @@
           <div id="bp-title" class="bp-title">No Track Selected</div>
           <div id="bp-artist" class="bp-artist">-</div>
         </div>
-        <button id="bp-like" class="bp-btn small">👍</button>
-        <button id="bp-dislike" class="bp-btn small">👎</button>
+        <button id="bp-like" class="bp-btn small"><img class="pixel-icon" src="assets/icons/icon_like.svg"></button>
+        <button id="bp-dislike" class="bp-btn small"><img class="pixel-icon" src="assets/icons/icon_dislike.svg"></button>
       </div>
 
       <!-- Right: Extra Controls -->
       <div class="bp-right" style="display: flex; align-items: center; gap: 15px;">
         <div class="bp-vol-container" style="display: flex; align-items: center; gap: 8px;">
           <input type="range" id="bp-vol-slider" min="0" max="1" step="0.01" value="0.5" style="width: 80px; height: 4px; accent-color: white; cursor: pointer;">
-          <span style="font-size: 16px; color: #aaa;" title="Volume">🔊</span>
+          <span style="font-size: 16px; color: #aaa;" title="Volume"><img class="pixel-icon" src="assets/icons/icon_volume.svg"></span>
         </div>
-        <button class="bp-btn small" id="bp-repeat" title="Repeat" style="font-size: 16px; color: #777; transition: color 0.2s;">🔁</button>
-        <button class="bp-btn small" id="bp-shuffle" title="Shuffle" style="font-size: 16px; color: #777; transition: color 0.2s;">🔀</button>
-        <button class="bp-btn small" id="bp-toggle-player" style="margin-left: 10px;">▲</button>
+        <button class="bp-btn small" id="bp-repeat" title="Repeat" style="font-size: 16px; color: #777; transition: color 0.2s;"><img class="pixel-icon" src="assets/icons/icon_repeat.svg"></button>
+        <button class="bp-btn small" id="bp-shuffle" title="Shuffle" style="font-size: 16px; color: #777; transition: color 0.2s;"><img class="pixel-icon" src="assets/icons/icon_shuffle.svg"></button>
+        <button class="bp-btn small" id="bp-toggle-player" style="margin-left: 10px;"><img class="pixel-icon" src="assets/icons/icon_up.svg"></button>
       </div>
     </footer>
   </div>

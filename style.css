@@ -968,3 +968,25 @@ input[type=range].pixel-slider-master::-webkit-slider-runnable-track {
   color: var(--highlight) !important;
 }
 
+/* Explore Genre Cards */
+.genre-card {
+  height: 120px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: bold;
+  color: #fff;
+  cursor: pointer;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  transition: transform 0.2s, box-shadow 0.2s;
+  overflow: hidden;
+  position: relative;
+}
+.genre-card:hover {
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.8);
+}
+

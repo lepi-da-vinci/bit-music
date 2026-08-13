@@ -1,5 +1,13 @@
 try {
 
+  // Pixel Art SVG Icons
+  const ICONS = {
+    play: '<img class="pixel-icon" src="assets/icons/icon_play.svg">',
+    pause: '<img class="pixel-icon" src="assets/icons/icon_pause.svg">',
+    up: '<img class="pixel-icon" src="assets/icons/icon_up.svg">',
+    down: '<img class="pixel-icon" src="assets/icons/icon_down.svg">'
+  };
+
   let masterPlaylist = [];
   let playlist = [];
   let currentIndex = -1;
@@ -366,6 +374,41 @@ try {
             }
           });
           
+          // Populate Explore View Sections
+          const exploreNewReleases = document.getElementById('explore-new-releases');
+          const exploreTrending = document.getElementById('explore-trending');
+          
+          if (exploreNewReleases && exploreTrending) {
+             const allAlbums = Object.keys(albumMap);
+             // Pick random albums for new releases and trending to simulate explore page
+             const shuffledNew = [...allAlbums].sort(() => Math.random() - 0.5);
+             const shuffledTrend = [...allAlbums].sort(() => Math.random() - 0.5);
+             
+             shuffledNew.slice(0, 10).forEach(albumName => {
+                const tracks = albumMap[albumName];
+                const cover = tracks[0].coverBase64 ? `url('${tracks[0].coverBase64}')` : 'none';
+                exploreNewReleases.innerHTML += `
+                  <div class="album-card" data-album="${albumName}">
+                    <div class="album-card-art" style="background: ${cover}; background-size: cover; background-position: center;"></div>
+                    <div class="album-card-title">${albumName}</div>
+                    <div class="album-card-artist">${tracks[0].artist}</div>
+                  </div>
+                `;
+             });
+             
+             shuffledTrend.slice(0, 10).forEach(albumName => {
+                const tracks = albumMap[albumName];
+                const cover = tracks[0].coverBase64 ? `url('${tracks[0].coverBase64}')` : 'none';
+                exploreTrending.innerHTML += `
+                  <div class="album-card" data-album="${albumName}">
+                    <div class="album-card-art" style="background: ${cover}; background-size: cover; background-position: center;"></div>
+                    <div class="album-card-title">${albumName}</div>
+                    <div class="album-card-artist">${tracks[0].artist}</div>
+                  </div>
+                `;
+             });
+          }
+          
           // Bind clicks for Library Grid
           const libraryAlbumsGrid = document.getElementById('library-albums-grid');
           if (libraryAlbumsGrid) {
@@ -417,7 +460,7 @@ try {
                     previousView = 'library';
                     if (libraryView) libraryView.classList.add('hidden');
                     if (playerView) playerView.classList.remove('hidden');
-                    if (bpTogglePlayer) bpTogglePlayer.innerText = '▼';
+                    if (bpTogglePlayer) bpTogglePlayer.innerHTML = ICONS.down;
                     
                     loadTrack(0);
                     playTrack();
@@ -447,7 +490,7 @@ try {
                     previousView = 'library';
                     if (libraryView) libraryView.classList.add('hidden');
                     if (playerView) playerView.classList.remove('hidden');
-                    if (bpTogglePlayer) bpTogglePlayer.innerText = '▼';
+                    if (bpTogglePlayer) bpTogglePlayer.innerHTML = ICONS.down;
                     
                     loadTrack(trackIdx);
                     playTrack();
@@ -486,19 +529,23 @@ try {
             };
           }
           
-          // Bind clicks for Home Carousel
-          if (homeAlbums) {
-            document.querySelectorAll('.album-card').forEach(el => {
+          // Bind clicks for Home & Explore Carousels
+          document.querySelectorAll('.carousel').forEach(carousel => {
+            carousel.querySelectorAll('.album-card').forEach(el => {
               el.onclick = () => {
                 const selectedAlbum = el.getAttribute('data-album');
                 playlist = albumMap[selectedAlbum];
                 
                 // Switch to Player View
-                previousView = 'home';
+                previousView = document.getElementById('explore-view') && !document.getElementById('explore-view').classList.contains('hidden') ? 'explore' : 'home';
                 if (homeView) homeView.classList.add('hidden');
+                const exploreView = document.getElementById('explore-view');
+                if (exploreView) exploreView.classList.add('hidden');
+                
                 if (playerView) playerView.classList.remove('hidden');
                 if (navHome) navHome.classList.remove('active');
-                if (bpTogglePlayer) bpTogglePlayer.innerText = '▼';
+                if (navExplore) navExplore.classList.remove('active');
+                if (bpTogglePlayer) bpTogglePlayer.innerHTML = ICONS.down;
                 
                 renderPlaylist();
                 if (playlist.length > 0) {
@@ -507,7 +554,12 @@ try {
                 }
               };
             });
-          }
+          });
+          
+          // Bind Explore Genre Cards
+          document.querySelectorAll('.genre-card').forEach(card => {
+            card.onclick = () => showToast(`Menampilkan genre: ${card.innerText}`);
+          });
           
           // Bind Search Bar
           const searchInput = document.querySelector('.search-bar input');
@@ -655,15 +707,27 @@ try {
   let isVinylDragging = false;
   let isToneArmDragging = false;
 
+  // Setup Player Interaction
+  if (bpPlay) {
+    bpPlay.innerHTML = ICONS.play;
+  }
+
   function playTrack() {
     initAudioVisualizer();
     if (audioCtx.state === 'suspended') audioCtx.resume();
 
     if (currentIndex === -1 && playlist.length > 0) loadTrack(0);
-    if (audio.paused) audio.play();
-    isPlaying = true;
-    playBtnIcon.src = window.api.getAssetPath('btn_start_stop_active.png');
-    if (bpPlay) bpPlay.innerText = '⏸';
+    if (audio.paused) {
+      audio.play();
+      isPlaying = true;
+      playBtnIcon.src = window.api.getAssetPath('btn_start_stop_active.png');
+      if (bpPlay) bpPlay.innerHTML = ICONS.pause;
+    } else {
+      audio.pause();
+      isPlaying = false;
+      playBtnIcon.src = window.api.getAssetPath('btn_start_stop.png');
+      if (bpPlay) bpPlay.innerHTML = ICONS.play;
+    }
     updateToneArm();
   }
 
@@ -1082,41 +1146,52 @@ function updateToneArm() {
   const bpTogglePlayer = document.getElementById('bp-toggle-player');
   if (bpTogglePlayer) {
     bpTogglePlayer.onclick = () => {
-      // Toggle between Player and previous view
-      if (playerView.classList.contains('hidden')) {
-        if (!homeView.classList.contains('hidden')) previousView = 'home';
-        else if (!libraryView.classList.contains('hidden')) previousView = 'library';
-        
-        if (homeView) homeView.classList.add('hidden');
-        if (libraryView) libraryView.classList.add('hidden');
-        playerView.classList.remove('hidden');
-        if (navHome) navHome.classList.remove('active');
-        if (navLibrary) navLibrary.classList.remove('active');
-        bpTogglePlayer.innerText = '▼';
-      } else {
-        playerView.classList.add('hidden');
-        if (previousView === 'library') {
-          if (libraryView) libraryView.classList.remove('hidden');
-          if (navLibrary) navLibrary.classList.add('active');
+        if (playerView.classList.contains('hidden')) {
+          if (!homeView.classList.contains('hidden')) previousView = 'home';
+          else if (!libraryView.classList.contains('hidden')) previousView = 'library';
+          else if (document.getElementById('explore-view') && !document.getElementById('explore-view').classList.contains('hidden')) previousView = 'explore';
+          
+          if (homeView) homeView.classList.add('hidden');
+          if (libraryView) libraryView.classList.add('hidden');
+          const exploreView = document.getElementById('explore-view');
+          if (exploreView) exploreView.classList.add('hidden');
+          
+          playerView.classList.remove('hidden');
+          if (navHome) navHome.classList.remove('active');
+          if (navLibrary) navLibrary.classList.remove('active');
+          if (navExplore) navExplore.classList.remove('active');
+          bpTogglePlayer.innerHTML = ICONS.down;
         } else {
-          if (homeView) homeView.classList.remove('hidden');
-          if (navHome) navHome.classList.add('active');
+          playerView.classList.add('hidden');
+          if (previousView === 'library') {
+            if (libraryView) libraryView.classList.remove('hidden');
+            if (navLibrary) navLibrary.classList.add('active');
+          } else if (previousView === 'explore') {
+            const exploreView = document.getElementById('explore-view');
+            if (exploreView) exploreView.classList.remove('hidden');
+            if (navExplore) navExplore.classList.add('active');
+          } else {
+            if (homeView) homeView.classList.remove('hidden');
+            if (navHome) navHome.classList.add('active');
+          }
+          bpTogglePlayer.innerHTML = ICONS.up;
         }
-        bpTogglePlayer.innerText = '▲';
-      }
     };
   }
 
-  // Navigation Routing
+  const navExplore = document.getElementById('nav-explore');
+  const exploreView = document.getElementById('explore-view');
   if (navHome) {
     navHome.onclick = (e) => {
       e.preventDefault();
       if (playerView) playerView.classList.add('hidden');
       if (libraryView) libraryView.classList.add('hidden');
+      if (exploreView) exploreView.classList.add('hidden');
       if (homeView) homeView.classList.remove('hidden');
       
       navHome.classList.add('active');
       if (navLibrary) navLibrary.classList.remove('active');
+      if (navExplore) navExplore.classList.remove('active');
     };
   }
   if (navLibrary) {
@@ -1124,6 +1199,7 @@ function updateToneArm() {
       e.preventDefault();
       if (playerView) playerView.classList.add('hidden');
       if (homeView) homeView.classList.add('hidden');
+      if (exploreView) exploreView.classList.add('hidden');
       if (libraryView) libraryView.classList.remove('hidden');
       
       navLibrary.classList.add('active');
@@ -1132,11 +1208,17 @@ function updateToneArm() {
     };
   }
   
-  const navExplore = document.getElementById('nav-explore');
   if (navExplore) {
     navExplore.onclick = (e) => {
       e.preventDefault();
-      showToast('Fitur Eksplorasi akan segera hadir!');
+      if (playerView) playerView.classList.add('hidden');
+      if (homeView) homeView.classList.add('hidden');
+      if (libraryView) libraryView.classList.add('hidden');
+      if (exploreView) exploreView.classList.remove('hidden');
+      
+      navExplore.classList.add('active');
+      if (navHome) navHome.classList.remove('active');
+      if (navLibrary) navLibrary.classList.remove('active');
     };
   }
 
