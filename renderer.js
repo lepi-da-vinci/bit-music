@@ -46,6 +46,22 @@ try {
     'purple': '180, 80, 220', 'orange': '255, 170, 60', 'teal': '60, 200, 180'
   };
 
+  // Toast System
+  let toastTimeout;
+  function showToast(message) {
+    const container = document.getElementById('toast-container');
+    const msgEl = document.getElementById('toast-message');
+    if (!container || !msgEl) return;
+    
+    msgEl.innerText = message;
+    container.classList.remove('hidden');
+    
+    clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => {
+      container.classList.add('hidden');
+    }, 3000);
+  }
+
   // Web Audio API for Bass Glow and Visualizer
   let audioCtx;
   let analyser;
@@ -332,9 +348,9 @@ try {
                     </div>
                     <div class="library-track-duration" style="margin-right: 15px;">-</div>
                     <div class="library-track-actions" style="display:flex; gap: 10px;">
-                      <span style="font-size: 16px; cursor: pointer; color: #aaa;">👍</span>
-                      <span style="font-size: 16px; cursor: pointer; color: #aaa;">👎</span>
-                      <span style="font-size: 16px; cursor: pointer; color: #aaa;">⋮</span>
+                      <span class="track-like" style="font-size: 16px; cursor: pointer; color: #aaa;">👍</span>
+                      <span class="track-dislike" style="font-size: 16px; cursor: pointer; color: #aaa;">👎</span>
+                      <span class="track-more" style="font-size: 16px; cursor: pointer; color: #aaa;">⋮</span>
                     </div>
                   </div>
                   `;
@@ -356,6 +372,16 @@ try {
                     playTrack();
                   };
                 }
+
+                // Bind album detail action buttons
+                const btnAlbumDownload = document.getElementById('btn-album-download');
+                if (btnAlbumDownload) btnAlbumDownload.onclick = () => showToast('Mengunduh album...');
+                const btnAlbumEdit = document.getElementById('btn-album-edit');
+                if (btnAlbumEdit) btnAlbumEdit.onclick = () => showToast('Fitur edit album belum tersedia.');
+                const btnAlbumShare = document.getElementById('btn-album-share');
+                if (btnAlbumShare) btnAlbumShare.onclick = () => showToast('Tautan album berhasil disalin!');
+                const btnAlbumMore = document.getElementById('btn-album-more');
+                if (btnAlbumMore) btnAlbumMore.onclick = () => showToast('Menampilkan opsi album...');
                 
                 // Bind track clicks to play
                 document.querySelectorAll('.library-track-item').forEach(trackEl => {
@@ -374,6 +400,28 @@ try {
                     
                     loadTrack(trackIdx);
                     playTrack();
+                  };
+                });
+
+                // Bind track action buttons
+                document.querySelectorAll('.track-like').forEach(btn => {
+                  btn.onclick = (e) => {
+                    e.stopPropagation(); // prevent playing track
+                    btn.classList.toggle('icon-active');
+                    showToast(btn.classList.contains('icon-active') ? 'Dimasukkan ke daftar Suka' : 'Dihapus dari daftar Suka');
+                  };
+                });
+                document.querySelectorAll('.track-dislike').forEach(btn => {
+                  btn.onclick = (e) => {
+                    e.stopPropagation();
+                    btn.classList.toggle('icon-active');
+                    showToast(btn.classList.contains('icon-active') ? 'Lagu tidak disukai' : 'Batal tidak disukai');
+                  };
+                });
+                document.querySelectorAll('.track-more').forEach(btn => {
+                  btn.onclick = (e) => {
+                    e.stopPropagation();
+                    showToast('Opsi lagu...');
                   };
                 });
               };
@@ -409,6 +457,37 @@ try {
               };
             });
           }
+          
+          // Bind Search Bar
+          const searchInput = document.querySelector('.search-bar input');
+          if (searchInput) {
+            searchInput.oninput = (e) => {
+              const query = e.target.value.toLowerCase();
+              document.querySelectorAll('.album-card').forEach(card => {
+                const title = card.querySelector('.album-card-title').innerText.toLowerCase();
+                const artist = card.querySelector('.album-card-artist').innerText.toLowerCase();
+                if (title.includes(query) || artist.includes(query)) {
+                  card.style.display = 'block';
+                } else {
+                  card.style.display = 'none';
+                }
+              });
+            };
+          }
+          
+          // Bind Mood Chips
+          document.querySelectorAll('.mood-chip').forEach(chip => {
+            chip.onclick = () => {
+              // Toggle active class
+              document.querySelectorAll('.mood-chip').forEach(c => c.classList.remove('active'));
+              chip.classList.add('active');
+              showToast(`Memutar mix untuk mood: ${chip.innerText}`);
+              
+              // Simulate filtering by shuffling visible albums
+              const cards = Array.from(document.querySelectorAll('.album-card'));
+              cards.forEach(card => card.style.order = Math.floor(Math.random() * 100));
+            };
+          });
           
           // Bind clicks
           document.querySelectorAll('.album-item').forEach(el => {
@@ -998,8 +1077,29 @@ function updateToneArm() {
       
       navLibrary.classList.add('active');
       if (navHome) navHome.classList.remove('active');
+      if (navExplore) navExplore.classList.remove('active');
     };
   }
+  
+  const navExplore = document.getElementById('nav-explore');
+  if (navExplore) {
+    navExplore.onclick = (e) => {
+      e.preventDefault();
+      showToast('Fitur Eksplorasi akan segera hadir!');
+    };
+  }
+
+  const bpLike = document.getElementById('bp-like');
+  if (bpLike) bpLike.onclick = () => {
+    bpLike.classList.toggle('icon-active');
+    showToast(bpLike.classList.contains('icon-active') ? 'Lagu disukai' : 'Lagu batal disukai');
+  };
+  
+  const bpDislike = document.getElementById('bp-dislike');
+  if (bpDislike) bpDislike.onclick = () => {
+    bpDislike.classList.toggle('icon-active');
+    showToast(bpDislike.classList.contains('icon-active') ? 'Lagu tidak disukai' : 'Lagu batal tidak disukai');
+  };
 
   // Start
   loadMusic();

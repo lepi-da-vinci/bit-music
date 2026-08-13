@@ -926,7 +926,45 @@ input[type=range].pixel-slider-master::-webkit-slider-runnable-track {
   color: var(--text-dim);
   font-size: 20px;
 }
-
 .hidden {
   display: none !important;
 }
+
+/* Toast Notification Styles */
+.toast-container {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10000;
+  pointer-events: none;
+  transition: opacity 0.3s ease, bottom 0.3s ease;
+}
+.toast-message {
+  background: var(--highlight);
+  color: #fff;
+  padding: 10px 25px;
+  border-radius: 30px;
+  font-family: 'VT323', monospace;
+  font-size: 22px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  text-align: center;
+}
+.toast-container.hidden {
+  display: flex !important; /* Override the main hidden so it can fade */
+  opacity: 0;
+  bottom: 60px;
+}
+
+/* Mood Chip Active State */
+.mood-chip.active {
+  background: var(--highlight);
+  color: #fff;
+  border-color: var(--highlight);
+}
+
+/* Icon Active State (Likes) */
+.icon-active {
+  color: var(--highlight) !important;
+}
+
