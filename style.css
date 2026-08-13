@@ -28,7 +28,7 @@ body {
   padding: 0;
   background-color: var(--bg-color);
   color: var(--text-main);
-  font-family: 'VT323', 'Consolas', monospace;
+  font-family: 'Silkscreen', 'Consolas', monospace;
   font-size: 20px;
   overflow: hidden;
   user-select: none;
@@ -945,7 +945,7 @@ input[type=range].pixel-slider-master::-webkit-slider-runnable-track {
   color: #fff;
   padding: 10px 25px;
   border-radius: 30px;
-  font-family: 'VT323', monospace;
+  font-family: 'Silkscreen', monospace;
   font-size: 22px;
   box-shadow: 0 4px 15px rgba(0,0,0,0.5);
   text-align: center;
