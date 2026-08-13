@@ -2,10 +2,10 @@ try {
 
   // Pixel Art SVG Icons
   const ICONS = {
-    play: '<img class="pixel-icon" src="assets/icons/icon_play.svg">',
-    pause: '<img class="pixel-icon" src="assets/icons/icon_pause.svg">',
-    up: '<img class="pixel-icon" src="assets/icons/icon_up.svg">',
-    down: '<img class="pixel-icon" src="assets/icons/icon_down.svg">'
+    play: '<img class="pixel-icon" src="assets/icons/icon_play.bmp">',
+    pause: '<img class="pixel-icon" src="assets/icons/icon_pause.bmp">',
+    up: '<img class="pixel-icon" src="assets/icons/icon_up.bmp">',
+    down: '<img class="pixel-icon" src="assets/icons/icon_down.bmp">'
   };
 
   let masterPlaylist = [];
@@ -442,9 +442,9 @@ try {
                     </div>
                     <div class="library-track-duration" style="margin-right: 15px;">-</div>
                     <div class="library-track-actions" style="display:flex; gap: 10px;">
-                      <span class="track-like" style="font-size: 16px; cursor: pointer; color: #aaa;">👍</span>
-                      <span class="track-dislike" style="font-size: 16px; cursor: pointer; color: #aaa;">👎</span>
-                      <span class="track-more" style="font-size: 16px; cursor: pointer; color: #aaa;">⋮</span>
+                      <span class="track-like" style="font-size: 16px; cursor: pointer; color: #aaa;"><img class="pixel-icon" src="assets/icons/icon_like.bmp"></span>
+                      <span class="track-dislike" style="font-size: 16px; cursor: pointer; color: #aaa;"><img class="pixel-icon" src="assets/icons/icon_dislike.bmp"></span>
+                      <span class="track-more" style="font-size: 16px; cursor: pointer; color: #aaa;"><img class="pixel-icon" src="assets/icons/icon_more.bmp"></span>
                     </div>
                   </div>
                   `;
