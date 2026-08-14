@@ -58,12 +58,68 @@
           <button class="mood-chip" data-mood="fokus">Fokus</button>
         </div>
         
+        <!-- SECTION 1: PILIHAN CEPAT (QUICK PICKS 4-ROW GRID) -->
         <div class="carousel-section">
-          <div class="section-header">
-            <img src="assets/vinyl_red.png" width="40" height="40" style="border-radius:50%;">
-            <div>
+          <div class="section-header-row">
+            <div class="section-header-left">
+              <div class="section-subtitle">MULAI DENGAN CEPAT</div>
+              <h2 class="section-title">Pilihan cepat</h2>
+            </div>
+            <div class="section-header-right">
+              <button id="btn-quick-picks-play-all" class="section-action-btn">▶ Putar semua</button>
+              <button class="carousel-nav-btn" data-target="home-quick-picks" data-dir="-1" title="Sebelumnya">⟨</button>
+              <button class="carousel-nav-btn" data-target="home-quick-picks" data-dir="1" title="Berikutnya">⟩</button>
+            </div>
+          </div>
+          <div class="quick-picks-grid" id="home-quick-picks">
+            <!-- Injected by JS -->
+          </div>
+        </div>
+
+        <!-- SECTION 2: PLAYLIST UNGGULAN UNTUK ANDA (FEATURED MIXES) -->
+        <div class="carousel-section">
+          <div class="section-header-row">
+            <div class="section-header-left">
+              <div class="section-subtitle">DISESUAIKAN DENGAN SELERA ANDA</div>
+              <h2 class="section-title">Playlist unggulan untuk Anda</h2>
+            </div>
+            <div class="section-header-right">
+              <button class="carousel-nav-btn" data-target="home-featured-mixes" data-dir="-1" title="Sebelumnya">⟨</button>
+              <button class="carousel-nav-btn" data-target="home-featured-mixes" data-dir="1" title="Berikutnya">⟩</button>
+            </div>
+          </div>
+          <div class="carousel" id="home-featured-mixes">
+            <!-- Injected by JS -->
+          </div>
+        </div>
+
+        <!-- SECTION 3: ARTIS DI KOLEKSI ANDA -->
+        <div class="carousel-section">
+          <div class="section-header-row">
+            <div class="section-header-left">
+              <div class="section-subtitle">JELAJAHI MUSISI FAVORIT</div>
+              <h2 class="section-title">Artis di Koleksi Anda</h2>
+            </div>
+            <div class="section-header-right">
+              <button class="carousel-nav-btn" data-target="home-artists" data-dir="-1" title="Sebelumnya">⟨</button>
+              <button class="carousel-nav-btn" data-target="home-artists" data-dir="1" title="Berikutnya">⟩</button>
+            </div>
+          </div>
+          <div class="carousel" id="home-artists">
+            <!-- Injected by JS -->
+          </div>
+        </div>
+
+        <!-- SECTION 4: DENGARKAN LAGI -->
+        <div class="carousel-section" style="margin-bottom: 80px;">
+          <div class="section-header-row">
+            <div class="section-header-left">
               <div class="section-subtitle">RETRO GROOVE</div>
               <h2 class="section-title">Dengarkan lagi</h2>
+            </div>
+            <div class="section-header-right">
+              <button class="carousel-nav-btn" data-target="home-albums" data-dir="-1" title="Sebelumnya">⟨</button>
+              <button class="carousel-nav-btn" data-target="home-albums" data-dir="1" title="Berikutnya">⟩</button>
             </div>
           </div>
           <div class="carousel" id="home-albums">
@@ -124,8 +180,11 @@
         <!-- Album Grid -->
         <div id="library-albums-container">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
-            <h2 class="section-title" style="margin: 0; font-size: 32px;">Koleksi Album & Playlist</h2>
-            <button id="btn-create-playlist" class="bp-btn" style="font-family: inherit; font-size: 14px; background: rgba(0,255,204,0.15); border: 1px solid #00ffcc; color: #00ffcc; padding: 6px 14px; border-radius: 6px; cursor: pointer; transition: 0.2s; box-shadow: 0 0 10px rgba(0,255,204,0.2);">+ Buat Playlist</button>
+            <h2 class="section-title" style="margin: 0; font-size: 32px;">Playlist & Koleksi Kamu</h2>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <button id="btn-auto-create-albums" class="bp-btn" style="font-family: inherit; font-size: 14px; background: rgba(255,170,0,0.15); border: 1px solid #ffaa00; color: #ffaa00; padding: 6px 14px; border-radius: 6px; cursor: pointer; transition: 0.2s; box-shadow: 0 0 10px rgba(255,170,0,0.2);">⚡ Susun Album Otomatis</button>
+              <button id="btn-create-playlist" class="bp-btn" style="font-family: inherit; font-size: 14px; background: rgba(0,255,204,0.15); border: 1px solid #00ffcc; color: #00ffcc; padding: 6px 14px; border-radius: 6px; cursor: pointer; transition: 0.2s; box-shadow: 0 0 10px rgba(0,255,204,0.2);">+ Buat Playlist</button>
+            </div>
           </div>
           <div id="library-albums-grid" class="library-grid">
             <!-- Injected by JS -->
@@ -152,12 +211,13 @@
             
             <!-- Action Buttons -->
             <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 30px; flex-wrap: wrap;">
-              <button id="btn-album-download" class="bp-btn" style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1);"><img class="pixel-icon" src="assets/icons/icon_down.bmp"></button>
-              <button id="btn-album-edit" class="bp-btn" style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1);"><img class="pixel-icon" src="assets/icons/icon_edit.bmp"></button>
-              <button id="library-detail-play" class="bp-btn" style="width: 60px; height: 60px; border-radius: 50%; background: #fff; color: #000; display: flex; justify-content: center; align-items: center; font-size: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);"><img class="pixel-icon" src="assets/icons/icon_play.bmp" style="fill: #000; filter: invert(1); margin-left: 4px;"></button>
+              <button id="btn-album-shuffle" class="album-action-btn" title="Putar Acak Album (Shuffle Play)"><img class="pixel-icon" src="assets/icons/icon_shuffle.bmp"></button>
+              <button id="btn-album-edit" class="album-action-btn" title="Ubah Nama Album / Playlist"><img class="pixel-icon" src="assets/icons/icon_edit.bmp"></button>
+              <button id="library-detail-play" class="bp-btn" style="width: 60px; height: 60px; border-radius: 50%; background: #fff; color: #000; display: flex; justify-content: center; align-items: center; font-size: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); cursor: pointer;" title="Putar Semua"><img class="pixel-icon" src="assets/icons/icon_play.bmp" style="fill: #000; filter: invert(1); width: 22px; height: 22px; margin-left: 3px;"></button>
               <button id="btn-playlist-add-songs" class="bp-btn" style="width: auto; padding: 8px 18px; font-family: inherit; font-size: 13px; font-weight: bold; background: #00ffcc; color: #000; border-radius: 20px; cursor: pointer; display: none; box-shadow: 0 0 12px rgba(0,255,204,0.3);">+ Tambah Lagu</button>
-              <button id="btn-album-share" class="bp-btn" style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1);"><img class="pixel-icon" src="assets/icons/icon_share.bmp"></button>
-              <button id="btn-album-more" class="bp-btn" style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1);"><img class="pixel-icon" src="assets/icons/icon_more.bmp"></button>
+              <button id="btn-album-download" class="album-action-btn" title="Ekspor Playlist (.m3u)"><img class="pixel-icon" src="assets/icons/icon_down.bmp"></button>
+              <button id="btn-album-share" class="album-action-btn" title="Salin Daftar Lagu ke Clipboard"><img class="pixel-icon" src="assets/icons/icon_copy.svg"></button>
+              <button id="btn-album-more" class="album-action-btn" title="Opsi Playlist"><img class="pixel-icon" src="assets/icons/icon_more.bmp"></button>
             </div>
           </div>
           
@@ -387,6 +447,15 @@
     <div class="lyrics-track-banner" id="lyrics-track-banner">
       <div id="lyrics-title" style="font-size: 15px; font-weight: bold; color: #fff;">-</div>
       <div id="lyrics-artist" style="font-size: 12px; color: #aaa;">-</div>
+    </div>
+    <div class="lyrics-sync-bar" style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.4); padding: 6px 10px; border-radius: 6px; margin-bottom: 12px; font-size: 11px; border: 1px solid rgba(255,255,255,0.1);">
+      <span style="color: #aaa;">⏱️ Sinkronisasi Lirik:</span>
+      <div style="display: flex; gap: 6px; align-items: center;">
+        <button id="btn-lyric-delay" class="retro-btn" style="padding: 2px 7px; font-size: 10px; height: 22px; cursor: pointer;" title="Mundurkan lirik 0.5 detik">-0.5s</button>
+        <span id="lyric-offset-val" style="color: #00ffcc; font-weight: bold; min-width: 40px; text-align: center;">0.0s</span>
+        <button id="btn-lyric-advance" class="retro-btn" style="padding: 2px 7px; font-size: 10px; height: 22px; cursor: pointer;" title="Majukan lirik 0.5 detik">+0.5s</button>
+        <button id="btn-lyric-reset" class="retro-btn" style="padding: 2px 6px; font-size: 10px; height: 22px; color: #888; cursor: pointer;" title="Reset offset ke 0s">Reset</button>
+      </div>
     </div>
     <div id="lyrics-content" class="lyrics-content">
       <!-- Injected by JS -->
