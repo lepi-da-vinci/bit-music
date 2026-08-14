@@ -129,60 +129,609 @@ try {
     });
   }
 
-  // Retro UI Sound Effects Synthesizer
+  // Custom Playlist Management (Local Storage)
+  const CUSTOM_PLAYLISTS_KEY = 'retro_groove_custom_playlists';
+  function getCustomPlaylists() {
+    try {
+      const saved = localStorage.getItem(CUSTOM_PLAYLISTS_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveCustomPlaylists(list) {
+    localStorage.setItem(CUSTOM_PLAYLISTS_KEY, JSON.stringify(list));
+  }
+
+  function createCustomPlaylist(name) {
+    if (!name || !name.trim()) return null;
+    const list = getCustomPlaylists();
+    const newPl = {
+      id: 'pl_' + Date.now(),
+      name: name.trim(),
+      trackFilenames: []
+    };
+    list.push(newPl);
+    saveCustomPlaylists(list);
+    showToast(`Playlist "${newPl.name}" berhasil dibuat! 📁`);
+    return newPl;
+  }
+
+  function addTrackToCustomPlaylist(playlistId, filename) {
+    const list = getCustomPlaylists();
+    const pl = list.find(p => p.id === playlistId);
+    if (!pl) return;
+    if (!pl.trackFilenames.includes(filename)) {
+      pl.trackFilenames.push(filename);
+      saveCustomPlaylists(list);
+      playRetroSFX('like');
+      showToast(`Lagu dimasukkan ke "${pl.name}"!`);
+    } else {
+      showToast(`Lagu sudah ada di "${pl.name}"`);
+    }
+  }
+
+  function removeTrackFromCustomPlaylist(playlistId, filename) {
+    const list = getCustomPlaylists();
+    const pl = list.find(p => p.id === playlistId);
+    if (!pl) return;
+    pl.trackFilenames = pl.trackFilenames.filter(f => f !== filename);
+    saveCustomPlaylists(list);
+    showToast(`Lagu dihapus dari "${pl.name}"`);
+  }
+
+  function deleteCustomPlaylist(playlistId) {
+    let list = getCustomPlaylists();
+    const pl = list.find(p => p.id === playlistId);
+    const name = pl ? pl.name : 'Playlist';
+    list = list.filter(p => p.id !== playlistId);
+    saveCustomPlaylists(list);
+    showToast(`Playlist "${name}" telah dihapus`);
+  }
+
+  // Retro Modal System
+  function showCreatePlaylistModal(onCreated) {
+    const modalContainer = document.getElementById('retro-modal-container');
+    const modalTitle = document.getElementById('retro-modal-title');
+    const modalBody = document.getElementById('retro-modal-body');
+    const btnCancel = document.getElementById('retro-modal-cancel');
+    const btnConfirm = document.getElementById('retro-modal-confirm');
+    if (!modalContainer) return;
+
+    btnConfirm.style.display = 'block';
+    modalTitle.innerText = 'Buat Playlist Baru';
+    modalBody.innerHTML = `
+      <div style="font-size: 14px; color: #aaa; margin-bottom: 8px;">Masukkan nama playlist retro kamu:</div>
+      <input type="text" id="retro-playlist-name-input" class="retro-input" placeholder="Contoh: Synthwave Nights, Chill Beat..." autofocus>
+    `;
+    modalContainer.classList.remove('hidden');
+    playRetroSFX('click');
+
+    const input = document.getElementById('retro-playlist-name-input');
+    if (input) setTimeout(() => input.focus(), 50);
+
+    btnCancel.onclick = () => {
+      modalContainer.classList.add('hidden');
+      playRetroSFX('click');
+    };
+
+    btnConfirm.onclick = () => {
+      const name = input ? input.value.trim() : '';
+      if (!name) {
+        showToast('Nama playlist tidak boleh kosong!');
+        return;
+      }
+      const newPl = createCustomPlaylist(name);
+      modalContainer.classList.add('hidden');
+      playRetroSFX('like');
+      if (onCreated) onCreated(newPl);
+    };
+  }
+
+  function showAddToPlaylistModal(track) {
+    if (!track) return;
+    const modalContainer = document.getElementById('retro-modal-container');
+    const modalTitle = document.getElementById('retro-modal-title');
+    const modalBody = document.getElementById('retro-modal-body');
+    const btnCancel = document.getElementById('retro-modal-cancel');
+    const btnConfirm = document.getElementById('retro-modal-confirm');
+    if (!modalContainer) return;
+
+    const playlists = getCustomPlaylists();
+    modalTitle.innerText = 'Tambahkan ke Playlist';
+    
+    if (playlists.length === 0) {
+      modalBody.innerHTML = `
+        <div style="padding: 15px 0; text-align: center; color: #aaa;">
+          Kamu belum punya playlist kustom.<br>
+          <button id="btn-modal-quick-create" class="retro-btn primary" style="margin-top: 15px;">+ Buat Playlist Sekarang</button>
+        </div>
+      `;
+      btnConfirm.style.display = 'none';
+      
+      const quickCreate = document.getElementById('btn-modal-quick-create');
+      if (quickCreate) {
+        quickCreate.onclick = () => {
+          showCreatePlaylistModal(() => {
+            showAddToPlaylistModal(track);
+          });
+        };
+      }
+    } else {
+      btnConfirm.style.display = 'block';
+      let optionsHtml = playlists.map(pl => {
+        const hasTrack = pl.trackFilenames.includes(track.filename);
+        return `
+          <label style="display: flex; align-items: center; gap: 10px; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 6px; margin-bottom: 8px; cursor: pointer;">
+            <input type="radio" name="target-playlist" value="${pl.id}" style="accent-color: #00ffcc;" ${hasTrack ? 'disabled' : ''}>
+            <span style="font-size: 15px; color: ${hasTrack ? '#666' : '#fff'};">${pl.name} (${pl.trackFilenames.length} lagu) ${hasTrack ? '✓ Sudah ada' : ''}</span>
+          </label>
+        `;
+      }).join('');
+
+      modalBody.innerHTML = `
+        <div style="font-size: 13px; color: #888; margin-bottom: 12px;">Lagu: <b style="color:#fff;">${track.title}</b></div>
+        <div style="max-height: 200px; overflow-y: auto;">
+          ${optionsHtml}
+        </div>
+      `;
+    }
+
+    modalContainer.classList.remove('hidden');
+    playRetroSFX('click');
+
+    btnCancel.onclick = () => {
+      modalContainer.classList.add('hidden');
+      playRetroSFX('click');
+    };
+
+    btnConfirm.onclick = () => {
+      const selectedRadio = modalBody.querySelector('input[name="target-playlist"]:checked');
+      if (!selectedRadio) {
+        showToast('Pilih salah satu playlist!');
+        return;
+      }
+      addTrackToCustomPlaylist(selectedRadio.value, track.filename);
+      modalContainer.classList.add('hidden');
+    };
+  }
+
+  // Select Multiple Tracks for Custom Playlist Modal
+  function showSelectTracksModal(playlistId, playlistName, onDone) {
+    const modalContainer = document.getElementById('retro-modal-container');
+    const modalTitle = document.getElementById('retro-modal-title');
+    const modalBody = document.getElementById('retro-modal-body');
+    const btnCancel = document.getElementById('retro-modal-cancel');
+    const btnConfirm = document.getElementById('retro-modal-confirm');
+    if (!modalContainer) return;
+
+    modalTitle.innerText = `Pilih Lagu: "${playlistName}"`;
+    btnConfirm.innerText = 'Selesai';
+    btnConfirm.style.display = 'block';
+    btnCancel.style.display = 'none';
+
+    function renderTrackSelectorList(query = '') {
+      const pl = getCustomPlaylists().find(p => p.id === playlistId);
+      const currentFilenames = pl ? pl.trackFilenames : [];
+      
+      const filtered = masterPlaylist.filter(t => 
+        !query || 
+        t.title.toLowerCase().includes(query.toLowerCase()) || 
+        t.artist.toLowerCase().includes(query.toLowerCase())
+      );
+
+      let listHtml = `
+        <input type="text" id="track-picker-search" class="retro-input" placeholder="Cari judul lagu atau artis..." value="${query}" style="margin-bottom: 12px;">
+        <div id="track-picker-items" style="max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+      `;
+
+      if (filtered.length === 0) {
+        listHtml += `<div style="color: #777; text-align: center; padding: 20px;">Tidak ada lagu yang cocok</div>`;
+      } else {
+        filtered.forEach(track => {
+          const isAdded = currentFilenames.includes(track.filename);
+          const cover = track.coverBase64 ? `url('${track.coverBase64}')` : 'none';
+          listHtml += `
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: rgba(255,255,255,0.05); border-radius: 6px; border: 1px solid ${isAdded ? '#00ffcc' : 'transparent'};">
+              <div style="display: flex; align-items: center; gap: 10px; overflow: hidden; margin-right: 10px;">
+                <div style="width: 32px; height: 32px; border-radius: 4px; background-image: ${cover}; background-size: cover; background-position: center; background-color: #222; flex-shrink: 0;"></div>
+                <div style="overflow: hidden;">
+                  <div style="font-size: 13px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${track.title}</div>
+                  <div style="font-size: 11px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${track.artist}</div>
+                </div>
+              </div>
+              <button class="picker-toggle-btn" data-filename="${track.filename}" style="font-family: inherit; font-size: 12px; padding: 4px 10px; border-radius: 4px; border: 1px solid ${isAdded ? '#ff007f' : '#00ffcc'}; background: ${isAdded ? 'rgba(255,0,127,0.15)' : 'rgba(0,255,204,0.15)'}; color: ${isAdded ? '#ff007f' : '#00ffcc'}; cursor: pointer; flex-shrink: 0;">
+                ${isAdded ? '✕ Hapus' : '+ Tambah'}
+              </button>
+            </div>
+          `;
+        });
+      }
+      listHtml += `</div>`;
+      modalBody.innerHTML = listHtml;
+
+      const searchInput = document.getElementById('track-picker-search');
+      if (searchInput) {
+        searchInput.focus();
+        searchInput.oninput = (e) => {
+          renderTrackSelectorList(e.target.value);
+        };
+      }
+
+      modalBody.querySelectorAll('.picker-toggle-btn').forEach(btn => {
+        btn.onclick = () => {
+          const fn = btn.getAttribute('data-filename');
+          const currentPl = getCustomPlaylists().find(p => p.id === playlistId);
+          if (currentPl && currentPl.trackFilenames.includes(fn)) {
+            removeTrackFromCustomPlaylist(playlistId, fn);
+          } else {
+            addTrackToCustomPlaylist(playlistId, fn);
+          }
+          const currentQ = searchInput ? searchInput.value : '';
+          renderTrackSelectorList(currentQ);
+        };
+      });
+    }
+
+    renderTrackSelectorList();
+    modalContainer.classList.remove('hidden');
+    playRetroSFX('tab');
+
+    btnConfirm.onclick = () => {
+      modalContainer.classList.add('hidden');
+      btnCancel.style.display = 'block';
+      btnConfirm.innerText = 'Simpan';
+      playRetroSFX('click');
+      if (onDone) onDone();
+    };
+  }
+
+  // Queue Drawer Update Function
+  function updateQueueDrawer() {
+    const queueNowPlaying = document.getElementById('queue-now-playing');
+    const queueList = document.getElementById('queue-list');
+    const queueCount = document.getElementById('queue-count');
+    if (!queueList || !queueNowPlaying) return;
+
+    const currentTrack = playlist[currentIndex];
+    if (currentTrack) {
+      const cover = currentTrack.coverBase64 ? `url('${currentTrack.coverBase64}')` : 'none';
+      queueNowPlaying.innerHTML = `
+        <div class="queue-item active">
+          <div class="queue-art" style="background-image: ${cover};"></div>
+          <div class="queue-info">
+            <div class="queue-title">${currentTrack.title}</div>
+            <div class="queue-artist">${currentTrack.artist} • ${currentTrack.album}</div>
+          </div>
+          <span style="font-size: 11px; color: #00ffcc; font-weight: bold;">SEDANG DIPUTAR</span>
+        </div>
+      `;
+    } else {
+      queueNowPlaying.innerHTML = `<div style="color: #666; font-size: 13px; padding: 5px;">Tidak ada lagu yang sedang diputar</div>`;
+    }
+
+    const upcomingTracks = playlist.slice(currentIndex + 1);
+    if (queueCount) queueCount.innerText = upcomingTracks.length;
+
+    if (upcomingTracks.length === 0) {
+      queueList.innerHTML = `<div style="color: #666; font-size: 13px; padding: 20px 0; text-align: center;">Akhir antrean lagu</div>`;
+    } else {
+      queueList.innerHTML = '';
+      upcomingTracks.forEach((track, offset) => {
+        const actualIdx = currentIndex + 1 + offset;
+        const cover = track.coverBase64 ? `url('${track.coverBase64}')` : 'none';
+        const item = document.createElement('div');
+        item.className = 'queue-item';
+        item.innerHTML = `
+          <div class="queue-art" style="background-image: ${cover};"></div>
+          <div class="queue-info">
+            <div class="queue-title">${track.title}</div>
+            <div class="queue-artist">${track.artist}</div>
+          </div>
+          <button class="bp-btn" style="font-size: 14px; color: #666; padding: 4px;" title="Hapus dari antrean">✕</button>
+        `;
+        item.onclick = (e) => {
+          if (e.target.tagName === 'BUTTON') {
+            e.stopPropagation();
+            playlist.splice(actualIdx, 1);
+            renderPlaylist();
+            updateQueueDrawer();
+            showToast(`Lagu "${track.title}" dihapus dari antrean`);
+          } else {
+            loadTrack(actualIdx);
+            playTrack();
+            updateQueueDrawer();
+          }
+        };
+        queueList.appendChild(item);
+      });
+    }
+  }
+
+  // Mini Player Management
+  function updateMiniPlayerUI() {
+    const miniWidget = document.getElementById('mini-player-widget');
+    const miniTitle = document.getElementById('mini-title');
+    const miniArtist = document.getElementById('mini-artist');
+    const miniArt = document.getElementById('mini-art');
+    const miniPlay = document.getElementById('mini-play');
+    if (!miniWidget) return;
+
+    const track = playlist[currentIndex];
+    if (track) {
+      if (miniTitle) miniTitle.innerText = track.title;
+      if (miniArtist) miniArtist.innerText = track.artist;
+      if (miniArt) {
+        if (track.coverBase64) {
+          miniArt.style.backgroundImage = `url('${track.coverBase64}')`;
+        } else {
+          miniArt.style.backgroundImage = 'none';
+        }
+        miniArt.classList.toggle('spinning', isPlaying);
+      }
+    }
+    if (miniPlay) {
+      miniPlay.innerHTML = isPlaying ? ICONS.pause : ICONS.play;
+    }
+  }
+
+  // Lyrics Manager (RPG Dialogue Box Style)
+  let currentLyrics = [];
+  function updateLyricsDrawer() {
+    const lyricsDrawer = document.getElementById('lyrics-drawer');
+    const lyricsTitle = document.getElementById('lyrics-title');
+    const lyricsArtist = document.getElementById('lyrics-artist');
+    const lyricsContent = document.getElementById('lyrics-content');
+    if (!lyricsContent) return;
+
+    const track = playlist[currentIndex];
+    if (!track) {
+      lyricsContent.innerHTML = `<div style="color: #666; font-size: 14px; padding: 40px 0;">Pilih lagu untuk melihat lirik</div>`;
+      return;
+    }
+
+    if (lyricsTitle) lyricsTitle.innerText = track.title;
+    if (lyricsArtist) lyricsArtist.innerText = `${track.artist} • ${track.album}`;
+
+    currentLyrics = [
+      { time: 0, text: `♪ ${track.title} ♪` },
+      { time: 6, text: `▶ Artis: ${track.artist}` },
+      { time: 12, text: `[8-Bit Chiptune Melodies Playing]` },
+      { time: 20, text: `Memutar nada retro di dalam malam` },
+      { time: 30, text: `Piringan hitam berputar perlahan` },
+      { time: 42, text: `Piksel bergoyang mengikuti dentuman bass` },
+      { time: 56, text: `Nikmati alunan groove tanpa batas` },
+      { time: 70, text: `♪ Retro Groove Music Player ♪` },
+      { time: 88, text: `[Solo Keyboard & Synthesizer Solo]` },
+      { time: 105, text: `Simpan ke playlist favorit kamu` },
+      { time: 125, text: `Bersama kami bernostalgia selalu` },
+      { time: 150, text: `♪ Outro - Terima kasih telah mendengarkan ♪` }
+    ];
+
+    lyricsContent.innerHTML = '';
+    currentLyrics.forEach((item, idx) => {
+      const lineEl = document.createElement('div');
+      lineEl.className = `lyrics-line ${idx === 0 ? 'active' : ''}`;
+      lineEl.id = `lyric-line-${idx}`;
+      lineEl.innerText = item.text;
+      lineEl.onclick = () => {
+        audio.currentTime = item.time;
+      };
+      lyricsContent.appendChild(lineEl);
+    });
+  }
+
+  function syncLyricsTime(currentTime) {
+    if (!currentLyrics || currentLyrics.length === 0) return;
+    let activeIdx = 0;
+    for (let i = 0; i < currentLyrics.length; i++) {
+      if (currentTime >= currentLyrics[i].time) {
+        activeIdx = i;
+      }
+    }
+    document.querySelectorAll('.lyrics-line').forEach((el, idx) => {
+      if (idx === activeIdx) {
+        if (!el.classList.contains('active')) {
+          el.classList.add('active');
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      } else {
+        el.classList.remove('active');
+      }
+    });
+  }
+
+  // Windows MediaSession API
+  function updateMediaSession(track) {
+    if (!('mediaSession' in navigator) || !track) return;
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: track.title,
+      artist: track.artist,
+      album: track.album,
+      artwork: [
+        { src: track.coverBase64 || 'assets/vinyl_red.png', sizes: '256x256', type: 'image/png' }
+      ]
+    });
+  }
+
+  function setupMediaSession() {
+    if (!('mediaSession' in navigator)) return;
+    navigator.mediaSession.setActionHandler('play', () => playTrack());
+    navigator.mediaSession.setActionHandler('pause', () => pauseTrack());
+    navigator.mediaSession.setActionHandler('previoustrack', () => {
+      if (currentIndex > 0) { loadTrack(currentIndex - 1); playTrack(); }
+    });
+    navigator.mediaSession.setActionHandler('nexttrack', () => {
+      if (currentIndex < playlist.length - 1) { loadTrack(currentIndex + 1); playTrack(); }
+    });
+    navigator.mediaSession.setActionHandler('seekto', (details) => {
+      if (details.seekTime && audio.duration) audio.currentTime = details.seekTime;
+    });
+  }
+
+  // Global Keyboard Shortcuts
+  function setupKeyboardShortcuts() {
+    window.addEventListener('keydown', (e) => {
+      // Ignore if currently typing inside an input
+      if (['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+        if (e.key === 'Escape') {
+          document.activeElement.blur();
+          const modal = document.getElementById('retro-modal-container');
+          if (modal) modal.classList.add('hidden');
+        }
+        return;
+      }
+
+      if (e.code === 'Space' || e.key === ' ') {
+        e.preventDefault();
+        e.stopPropagation();
+        togglePlay();
+        return;
+      }
+
+      switch (e.code) {
+        case 'ArrowLeft':
+          e.preventDefault();
+          e.stopPropagation();
+          if (audio.duration) {
+            audio.currentTime = Math.max(0, audio.currentTime - 5);
+            showToast(`⏪ -5 detik (${formatTime(audio.currentTime)})`);
+          }
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          e.stopPropagation();
+          if (audio.duration) {
+            audio.currentTime = Math.min(audio.duration, audio.currentTime + 5);
+            showToast(`⏩ +5 detik (${formatTime(audio.currentTime)})`);
+          }
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          audio.volume = Math.min(1, Math.round((audio.volume + 0.05) * 100) / 100);
+          if (volSlider) volSlider.value = audio.volume;
+          const bpVolSlider = document.getElementById('bp-vol-slider');
+          if (bpVolSlider) bpVolSlider.value = audio.volume;
+          showToast(`Volume: ${Math.round(audio.volume * 100)}% 🔊`);
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          audio.volume = Math.max(0, Math.round((audio.volume - 0.05) * 100) / 100);
+          if (volSlider) volSlider.value = audio.volume;
+          const bpVolSlider2 = document.getElementById('bp-vol-slider');
+          if (bpVolSlider2) bpVolSlider2.value = audio.volume;
+          showToast(`Volume: ${Math.round(audio.volume * 100)}% 🔉`);
+          break;
+        case 'KeyN':
+          if (currentIndex < playlist.length - 1) {
+            loadTrack(currentIndex + 1);
+            playTrack();
+            showToast('Lagu Selanjutnya ⏭️');
+          }
+          break;
+        case 'KeyP':
+          if (currentIndex > 0) {
+            loadTrack(currentIndex - 1);
+            playTrack();
+            showToast('Lagu Sebelumnya ⏮️');
+          }
+          break;
+        case 'KeyM':
+          audio.muted = !audio.muted;
+          showToast(audio.muted ? 'Audio Dibisukan (Muted) 🔇' : 'Audio Aktif 🔊');
+          break;
+        case 'KeyL':
+          if (playlist[currentIndex]) {
+            toggleFavorite(playlist[currentIndex]);
+          }
+          break;
+        case 'KeyQ':
+          const qDrawer = document.getElementById('queue-drawer');
+          if (qDrawer) {
+            qDrawer.classList.toggle('hidden');
+            playRetroSFX('tab');
+            if (!qDrawer.classList.contains('hidden')) updateQueueDrawer();
+          }
+          break;
+        case 'KeyK':
+          const lDrawer = document.getElementById('lyrics-drawer');
+          if (lDrawer) {
+            lDrawer.classList.toggle('hidden');
+            playRetroSFX('tab');
+            if (!lDrawer.classList.contains('hidden')) updateLyricsDrawer();
+          }
+          break;
+        case 'Escape':
+          const modal = document.getElementById('retro-modal-container');
+          if (modal) modal.classList.add('hidden');
+          const qDrawer2 = document.getElementById('queue-drawer');
+          if (qDrawer2) qDrawer2.classList.add('hidden');
+          const lDrawer2 = document.getElementById('lyrics-drawer');
+          if (lDrawer2) lDrawer2.classList.add('hidden');
+          break;
+      }
+    });
+  }
+
+  // Retro UI Sound Effects Synthesizer (Dedicated Context)
   let isSfxEnabled = true;
+  let sfxAudioCtx = null;
+
   function playRetroSFX(type) {
     if (!isSfxEnabled) return;
     try {
-      if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (!sfxAudioCtx) {
+        sfxAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
       }
-      if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
+      if (sfxAudioCtx.state === 'suspended') {
+        sfxAudioCtx.resume();
       }
-      const now = audioCtx.currentTime;
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
+      const now = sfxAudioCtx.currentTime;
+      const osc = sfxAudioCtx.createOscillator();
+      const gain = sfxAudioCtx.createGain();
       osc.connect(gain);
-      gain.connect(audioCtx.destination);
+      gain.connect(sfxAudioCtx.destination);
 
       if (type === 'click' || type === 'tab') {
         osc.type = 'square';
         osc.frequency.setValueAtTime(880, now);
-        osc.frequency.exponentialRampToValueAtTime(1400, now + 0.03);
-        gain.gain.setValueAtTime(0.06, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+        osc.frequency.exponentialRampToValueAtTime(1400, now + 0.04);
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
         osc.start(now);
-        osc.stop(now + 0.035);
+        osc.stop(now + 0.045);
       } else if (type === 'play') {
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(440, now);
-        osc.frequency.setValueAtTime(554.37, now + 0.04);
-        osc.frequency.setValueAtTime(659.25, now + 0.08);
-        gain.gain.setValueAtTime(0.08, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+        osc.frequency.setValueAtTime(554.37, now + 0.05);
+        osc.frequency.setValueAtTime(659.25, now + 0.10);
+        gain.gain.setValueAtTime(0.20, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
         osc.start(now);
-        osc.stop(now + 0.13);
+        osc.stop(now + 0.16);
       } else if (type === 'pause') {
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(659.25, now);
-        osc.frequency.setValueAtTime(523.25, now + 0.05);
-        gain.gain.setValueAtTime(0.08, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+        osc.frequency.setValueAtTime(523.25, now + 0.06);
+        gain.gain.setValueAtTime(0.20, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
         osc.start(now);
-        osc.stop(now + 0.11);
+        osc.stop(now + 0.13);
       } else if (type === 'like') {
         osc.type = 'square';
         osc.frequency.setValueAtTime(392.00, now);
-        osc.frequency.setValueAtTime(523.25, now + 0.03);
-        osc.frequency.setValueAtTime(659.25, now + 0.06);
-        osc.frequency.setValueAtTime(783.99, now + 0.09);
-        gain.gain.setValueAtTime(0.08, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+        osc.frequency.setValueAtTime(523.25, now + 0.04);
+        osc.frequency.setValueAtTime(659.25, now + 0.08);
+        osc.frequency.setValueAtTime(783.99, now + 0.12);
+        gain.gain.setValueAtTime(0.20, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
         osc.start(now);
-        osc.stop(now + 0.17);
+        osc.stop(now + 0.19);
       }
-    } catch (e) {}
+    } catch (e) {
+      console.log("SFX error:", e);
+    }
   }
 
   // Web Audio API for Bass Glow and Visualizer
@@ -194,8 +743,13 @@ try {
   let delayNode, feedbackGain, echoMix;
 
   function initAudioVisualizer() {
-    if (audioCtx) return;
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (source) return;
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
     analyser = audioCtx.createAnalyser();
     analyser.fftSize = 256;
     
@@ -518,13 +1072,15 @@ try {
             }
           });
 
-          // Function to Render Library Grid (including Liked Songs)
+          // Function to Render Library Grid (including Liked Songs & Custom Playlists)
           function renderLibraryGrid() {
             const libraryAlbumsGrid = document.getElementById('library-albums-grid');
             if (!libraryAlbumsGrid) return;
 
             const likedTracksCount = masterPlaylist.filter(t => isFavorite(t.filename)).length;
-            libraryAlbumsGrid.innerHTML = `
+            const customPlaylists = getCustomPlaylists();
+
+            let gridHtml = `
               <div class="library-album-card liked-songs-card" data-album="__LIKED_SONGS__">
                 <div class="library-album-art" style="background: linear-gradient(135deg, #ff007f 0%, #7928ca 100%); display: flex; justify-content: center; align-items: center; border-radius: 8px;">
                   <span style="font-size: 40px; filter: drop-shadow(0 0 10px #ff007f);">❤️</span>
@@ -534,10 +1090,24 @@ try {
               </div>
             `;
 
+            // Custom Playlists
+            customPlaylists.forEach(pl => {
+              gridHtml += `
+                <div class="library-album-card custom-playlist-card" data-album="CUSTOM_${pl.id}">
+                  <div class="library-album-art" style="background: linear-gradient(135deg, #00ffcc 0%, #0d1b2a 100%); display: flex; justify-content: center; align-items: center; border-radius: 8px;">
+                    <span style="font-size: 40px; filter: drop-shadow(0 0 10px #00ffcc);">📀</span>
+                  </div>
+                  <div class="library-album-title" style="color: #00ffcc;">${pl.name}</div>
+                  <div class="library-album-artist">${pl.trackFilenames.length} lagu kustom</div>
+                </div>
+              `;
+            });
+
+            // Regular Albums
             Object.keys(albumMap).forEach(albumName => {
               const tracks = albumMap[albumName];
               const cover = tracks[0].coverBase64 ? `url('${tracks[0].coverBase64}')` : 'none';
-              libraryAlbumsGrid.innerHTML += `
+              gridHtml += `
               <div class="library-album-card" data-album="${albumName}">
                 <div class="library-album-art" style="background-image: ${cover};"></div>
                 <div class="library-album-title">${albumName}</div>
@@ -545,6 +1115,8 @@ try {
               </div>
               `;
             });
+
+            libraryAlbumsGrid.innerHTML = gridHtml;
 
             // Bind click events on library cards
             libraryAlbumsGrid.querySelectorAll('.library-album-card').forEach(el => {
@@ -555,12 +1127,23 @@ try {
                 let albumArtist = '';
                 let albumMeta = '';
                 let isLikedAlbum = (selectedAlbum === '__LIKED_SONGS__');
+                let isCustomPl = selectedAlbum.startsWith('CUSTOM_');
+                let activeCustomPlId = null;
 
                 if (isLikedAlbum) {
                   tracks = masterPlaylist.filter(t => isFavorite(t.filename));
                   albumTitle = 'Lagu Disukai';
                   albumArtist = 'Koleksi Favorit Kamu';
                   albumMeta = `Koleksi Pribadi • ${tracks.length} lagu`;
+                } else if (isCustomPl) {
+                  activeCustomPlId = selectedAlbum.replace('CUSTOM_', '');
+                  const pl = getCustomPlaylists().find(p => p.id === activeCustomPlId);
+                  if (pl) {
+                    tracks = masterPlaylist.filter(t => pl.trackFilenames.includes(t.filename));
+                    albumTitle = pl.name;
+                    albumArtist = 'Playlist Kustom Kamu';
+                    albumMeta = `Playlist Kustom • ${tracks.length} lagu`;
+                  }
                 } else {
                   tracks = albumMap[selectedAlbum] || [];
                   albumTitle = selectedAlbum;
@@ -578,6 +1161,10 @@ try {
                   detailArt.style.backgroundImage = 'none';
                   detailArt.style.background = 'linear-gradient(135deg, #ff007f 0%, #7928ca 100%)';
                   detailArt.innerHTML = '<div style="width:100%;height:100%;display:flex;justify-content:center;align-items:center;font-size:80px;filter:drop-shadow(0 0 15px #ff007f);">❤️</div>';
+                } else if (isCustomPl) {
+                  detailArt.style.backgroundImage = 'none';
+                  detailArt.style.background = 'linear-gradient(135deg, #00ffcc 0%, #0d1b2a 100%)';
+                  detailArt.innerHTML = '<div style="width:100%;height:100%;display:flex;justify-content:center;align-items:center;font-size:80px;filter:drop-shadow(0 0 15px #00ffcc);">📀</div>';
                 } else {
                   detailArt.innerHTML = '';
                   const cover = tracks[0] && tracks[0].coverBase64 ? `url('${tracks[0].coverBase64}')` : 'none';
@@ -589,17 +1176,46 @@ try {
                 document.getElementById('library-detail-artist-text').innerText = albumArtist;
                 document.getElementById('library-detail-meta').innerHTML = albumMeta;
 
+                // Manage Add Songs Button
+                const btnPlaylistAddSongs = document.getElementById('btn-playlist-add-songs');
+                if (btnPlaylistAddSongs) {
+                  if (isCustomPl) {
+                    btnPlaylistAddSongs.style.display = 'block';
+                    btnPlaylistAddSongs.onclick = () => {
+                      showSelectTracksModal(activeCustomPlId, albumTitle, () => el.click());
+                    };
+                  } else {
+                    btnPlaylistAddSongs.style.display = 'none';
+                  }
+                }
+
                 // Populate Tracklist
                 const tracklistContainer = document.getElementById('library-tracklist');
                 tracklistContainer.innerHTML = '';
 
                 if (tracks.length === 0) {
-                  tracklistContainer.innerHTML = `
-                    <div style="padding: 50px 20px; text-align: center; color: #888;">
-                      <div style="font-size: 20px; margin-bottom: 8px; color: #fff;">Belum ada lagu yang disukai</div>
-                      <div style="font-size: 14px; color: #666;">Beri tanda suka (👍) pada lagu untuk memasukkannya ke daftar ini!</div>
-                    </div>
-                  `;
+                  if (isCustomPl) {
+                    tracklistContainer.innerHTML = `
+                      <div style="padding: 50px 20px; text-align: center; color: #888;">
+                        <div style="font-size: 22px; margin-bottom: 10px; color: #00ffcc;">Belum ada lagu di playlist ini</div>
+                        <div style="font-size: 14px; color: #aaa; margin-bottom: 22px;">Pilih lagu favorit kamu dari koleksi untuk dimasukkan ke playlist "${albumTitle}":</div>
+                        <button id="btn-empty-add-songs" class="retro-btn primary" style="font-size: 15px; padding: 12px 28px; cursor: pointer; border-radius: 8px; box-shadow: 0 0 15px rgba(0,255,204,0.4);">+ Pilih & Tambah Lagu Sekarang</button>
+                      </div>
+                    `;
+                    const btnEmptyAdd = document.getElementById('btn-empty-add-songs');
+                    if (btnEmptyAdd) {
+                      btnEmptyAdd.onclick = () => {
+                        showSelectTracksModal(activeCustomPlId, albumTitle, () => el.click());
+                      };
+                    }
+                  } else {
+                    tracklistContainer.innerHTML = `
+                      <div style="padding: 50px 20px; text-align: center; color: #888;">
+                        <div style="font-size: 20px; margin-bottom: 8px; color: #fff;">Belum ada lagu yang disukai</div>
+                        <div style="font-size: 14px; color: #666;">Beri tanda suka (👍) pada lagu untuk memasukkannya ke daftar ini!</div>
+                      </div>
+                    `;
+                  }
                 } else {
                   tracks.forEach((track, idx) => {
                     const trackCover = track.coverBase64 ? `url('${track.coverBase64}')` : 'none';
@@ -615,7 +1231,7 @@ try {
                       <div class="library-track-actions" style="display:flex; gap: 10px;">
                         <span class="track-like ${isFav ? 'icon-active' : ''}" style="font-size: 16px; cursor: pointer; color: #aaa;"><img class="pixel-icon" src="assets/icons/icon_like.bmp"></span>
                         <span class="track-dislike" style="font-size: 16px; cursor: pointer; color: #aaa;"><img class="pixel-icon" src="assets/icons/icon_dislike.bmp"></span>
-                        <span class="track-more" style="font-size: 16px; cursor: pointer; color: #aaa;"><img class="pixel-icon" src="assets/icons/icon_more.bmp"></span>
+                        <span class="track-more" style="font-size: 16px; cursor: pointer; color: #aaa;" title="Tambah ke Playlist"><img class="pixel-icon" src="assets/icons/icon_more.bmp"></span>
                       </div>
                     </div>
                     `;
@@ -640,6 +1256,23 @@ try {
                     
                     loadTrack(0);
                     playTrack();
+                  };
+                }
+
+                // Bind album detail options (e.g. delete custom playlist)
+                const btnAlbumMore = document.getElementById('btn-album-more');
+                if (btnAlbumMore) {
+                  btnAlbumMore.onclick = () => {
+                    if (isCustomPl && activeCustomPlId) {
+                      if (confirm(`Hapus playlist "${albumTitle}"?`)) {
+                        deleteCustomPlaylist(activeCustomPlId);
+                        libraryAlbumDetail.classList.add('hidden');
+                        libraryAlbumsContainer.classList.remove('hidden');
+                        renderLibraryGrid();
+                      }
+                    } else {
+                      showToast('Opsi album...');
+                    }
                   };
                 }
 
@@ -668,21 +1301,39 @@ try {
                     toggleFavorite(track);
                   };
                 });
-                tracklistContainer.querySelectorAll('.track-dislike').forEach(btn => {
+                tracklistContainer.querySelectorAll('.track-dislike').forEach((btn, idx) => {
                   btn.onclick = (e) => {
                     e.stopPropagation();
-                    btn.classList.toggle('icon-active');
-                    showToast(btn.classList.contains('icon-active') ? 'Lagu tidak disukai' : 'Batal tidak disukai');
+                    if (isCustomPl && activeCustomPlId) {
+                      const track = tracks[idx];
+                      removeTrackFromCustomPlaylist(activeCustomPlId, track.filename);
+                      // Re-click current card to refresh detail
+                      el.click();
+                    } else {
+                      btn.classList.toggle('icon-active');
+                      showToast(btn.classList.contains('icon-active') ? 'Lagu tidak disukai' : 'Batal tidak disukai');
+                    }
                   };
                 });
-                tracklistContainer.querySelectorAll('.track-more').forEach(btn => {
+                tracklistContainer.querySelectorAll('.track-more').forEach((btn, idx) => {
                   btn.onclick = (e) => {
                     e.stopPropagation();
-                    showToast('Opsi lagu...');
+                    const track = tracks[idx];
+                    showAddToPlaylistModal(track);
                   };
                 });
               };
             });
+          }
+
+          // Bind Create Playlist Button
+          const btnCreatePlaylist = document.getElementById('btn-create-playlist');
+          if (btnCreatePlaylist) {
+            btnCreatePlaylist.onclick = () => {
+              showCreatePlaylistModal(() => {
+                renderLibraryGrid();
+              });
+            };
           }
 
           renderLibraryGrid();
@@ -962,6 +1613,19 @@ try {
       if (idx === currentIndex) el.classList.add('active');
       else el.classList.remove('active');
     });
+
+    // Also update active album item in left pillar
+    const currentTrack = playlist[currentIndex];
+    if (currentTrack) {
+      document.querySelectorAll('.album-item').forEach(el => {
+        const alb = el.getAttribute('data-album');
+        if (alb === currentTrack.album || (playlist.length === masterPlaylist.length && alb === 'all')) {
+          el.classList.add('active');
+        } else {
+          el.classList.remove('active');
+        }
+      });
+    }
   }
 
   function loadTrack(index) {
@@ -1008,6 +1672,10 @@ try {
 
     updatePlaylistUI();
     updateFavoritesUI();
+    updateQueueDrawer();
+    updateMiniPlayerUI();
+    updateLyricsDrawer();
+    updateMediaSession(track);
   }
 
   let vinylRotation = 0;
@@ -1032,6 +1700,7 @@ try {
       playBtnIcon.src = window.api.getAssetPath('btn_start_stop_active.png');
       if (bpPlay) bpPlay.innerHTML = ICONS.pause;
       updateToneArm();
+      updateMiniPlayerUI();
       playRetroSFX('play');
     }).catch(err => {
       console.log("Audio play error:", err);
@@ -1045,12 +1714,17 @@ try {
     playBtnIcon.src = window.api.getAssetPath('btn_start_stop.png');
     if (bpPlay) bpPlay.innerHTML = ICONS.play;
     if (toneArm) toneArm.style.transform = 'rotate(-32deg) scale(0.8)';
+    updateToneArm();
+    updateMiniPlayerUI();
     playRetroSFX('pause');
   }
 
   function togglePlay() {
-    if (isPlaying) pauseTrack();
-    else playTrack();
+    if (!audio.paused || isPlaying) {
+      pauseTrack();
+    } else {
+      playTrack();
+    }
   }
 
 function formatTime(seconds) {
@@ -1090,6 +1764,7 @@ function updateToneArm() {
     }
     
     updateToneArm();
+    syncLyricsTime(audio.currentTime);
   });
 
   let isAutoMix = false;
@@ -1193,32 +1868,6 @@ function updateToneArm() {
       pauseTrack();
     }
   };
-
-  // Keyboard Shortcuts
-  document.addEventListener('keydown', (e) => {
-    if (e.code === 'Space') {
-      e.preventDefault();
-      togglePlay();
-    } else if (e.code === 'ArrowRight') {
-      e.preventDefault();
-      document.getElementById('btn-next').click();
-    } else if (e.code === 'ArrowLeft') {
-      e.preventDefault();
-      document.getElementById('btn-prev').click();
-    } else if (e.code === 'ArrowUp') {
-      e.preventDefault();
-      let v = parseFloat(audio.volume) + 0.05;
-      if (v > 1) v = 1;
-      volSlider.value = v;
-      volSlider.dispatchEvent(new Event('input'));
-    } else if (e.code === 'ArrowDown') {
-      e.preventDefault();
-      let v = parseFloat(audio.volume) - 0.05;
-      if (v < 0) v = 0;
-      volSlider.value = v;
-      volSlider.dispatchEvent(new Event('input'));
-    }
-  });
 
   // Progress scrubbing
   progressBg.onmousedown = (e) => {
@@ -1573,6 +2222,170 @@ function updateToneArm() {
     playRetroSFX('click');
     showToast(bpDislike.classList.contains('icon-active') ? 'Lagu tidak disukai' : 'Lagu batal tidak disukai');
   };
+
+  // Queue Drawer Toggle Handlers
+  const bpQueueBtn = document.getElementById('bp-queue-btn');
+  const queueDrawer = document.getElementById('queue-drawer');
+  const btnCloseQueue = document.getElementById('btn-close-queue');
+
+  if (bpQueueBtn && queueDrawer) {
+    bpQueueBtn.onclick = () => {
+      queueDrawer.classList.toggle('hidden');
+      playRetroSFX('tab');
+      if (!queueDrawer.classList.contains('hidden')) {
+        updateQueueDrawer();
+      }
+    };
+  }
+
+  if (btnCloseQueue && queueDrawer) {
+    btnCloseQueue.onclick = () => {
+      queueDrawer.classList.add('hidden');
+      playRetroSFX('click');
+    };
+  }
+
+  // Global Drag & Drop for Audio Files (.mp3, .wav, .ogg)
+  const dragDropOverlay = document.getElementById('drag-drop-overlay');
+  let dragCounter = 0;
+
+  window.addEventListener('dragenter', (e) => {
+    e.preventDefault();
+    dragCounter++;
+    if (dragDropOverlay) dragDropOverlay.classList.remove('hidden');
+  });
+
+  window.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    if (dragDropOverlay) dragDropOverlay.classList.remove('hidden');
+  });
+
+  window.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    dragCounter--;
+    if (dragCounter <= 0 && dragDropOverlay) {
+      dragCounter = 0;
+      dragDropOverlay.classList.add('hidden');
+    }
+  });
+
+  window.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    dragCounter = 0;
+    if (dragDropOverlay) dragDropOverlay.classList.add('hidden');
+
+    const files = Array.from(e.dataTransfer.files).filter(f => 
+      /\.(mp3|wav|ogg|flac|m4a)$/i.test(f.name)
+    );
+
+    if (files.length === 0) {
+      showToast('Hanya format file audio yang didukung!');
+      return;
+    }
+
+    const newTracks = files.map((file, idx) => {
+      const title = file.name.replace(/\.[^/.]+$/, "");
+      const fallbackSeed = title;
+      const cover = generateProceduralCover(fallbackSeed);
+      const filePath = file.path || URL.createObjectURL(file);
+
+      return {
+        filename: file.name,
+        path: filePath,
+        title: title,
+        artist: "Berkas Lokal",
+        genre: "Custom Drop",
+        album: "Local Drops",
+        coverBase64: cover,
+        vinylColor: vinylColors[idx % vinylColors.length]
+      };
+    });
+
+    // Prepend to masterPlaylist and current playlist
+    masterPlaylist = [...newTracks, ...masterPlaylist];
+    playlist = [...newTracks, ...playlist];
+    
+    renderPlaylist();
+    loadTrack(0);
+    playTrack();
+    playRetroSFX('like');
+    showToast(`Berhasil memuat ${files.length} lagu baru! 🎵`);
+  });
+
+  // Lyrics Drawer Toggle Handlers
+  const bpLyricsBtn = document.getElementById('bp-lyrics-btn');
+  const lyricsDrawer = document.getElementById('lyrics-drawer');
+  const btnCloseLyrics = document.getElementById('btn-close-lyrics');
+
+  if (bpLyricsBtn && lyricsDrawer) {
+    bpLyricsBtn.onclick = () => {
+      lyricsDrawer.classList.toggle('hidden');
+      playRetroSFX('tab');
+      if (!lyricsDrawer.classList.contains('hidden')) {
+        updateLyricsDrawer();
+      }
+    };
+  }
+
+  if (btnCloseLyrics && lyricsDrawer) {
+    btnCloseLyrics.onclick = () => {
+      lyricsDrawer.classList.add('hidden');
+      playRetroSFX('click');
+    };
+  }
+
+  // Floating Mini Player Handlers
+  const bpMiniBtn = document.getElementById('bp-mini-btn');
+  const miniPlayerWidget = document.getElementById('mini-player-widget');
+  const btnExpandMini = document.getElementById('btn-expand-mini');
+  const miniPrev = document.getElementById('mini-prev');
+  const miniPlay = document.getElementById('mini-play');
+  const miniNext = document.getElementById('mini-next');
+
+  if (bpMiniBtn && miniPlayerWidget) {
+    bpMiniBtn.onclick = () => {
+      miniPlayerWidget.classList.toggle('hidden');
+      playRetroSFX('tab');
+      if (!miniPlayerWidget.classList.contains('hidden')) {
+        updateMiniPlayerUI();
+      }
+    };
+  }
+
+  if (btnExpandMini && miniPlayerWidget) {
+    btnExpandMini.onclick = () => {
+      miniPlayerWidget.classList.add('hidden');
+      playRetroSFX('click');
+    };
+  }
+
+  if (miniPrev) {
+    miniPrev.onclick = () => {
+      if (currentIndex > 0) {
+        loadTrack(currentIndex - 1);
+        playTrack();
+      }
+    };
+  }
+
+  if (miniPlay) {
+    miniPlay.onclick = () => {
+      togglePlay();
+    };
+  }
+
+  if (miniNext) {
+    miniNext.onclick = () => {
+      if (currentIndex < playlist.length - 1) {
+        loadTrack(currentIndex + 1);
+        playTrack();
+      }
+    };
+  }
+
+  // Initialize Desktop Features
+  setupKeyboardShortcuts();
+  setupMediaSession();
 
   // Start
   loadMusic();

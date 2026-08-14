@@ -123,7 +123,10 @@
         
         <!-- Album Grid -->
         <div id="library-albums-container">
-          <h2 class="section-title" style="margin-bottom: 20px; font-size: 32px;">Koleksi Album</h2>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+            <h2 class="section-title" style="margin: 0; font-size: 32px;">Koleksi Album & Playlist</h2>
+            <button id="btn-create-playlist" class="bp-btn" style="font-family: inherit; font-size: 14px; background: rgba(0,255,204,0.15); border: 1px solid #00ffcc; color: #00ffcc; padding: 6px 14px; border-radius: 6px; cursor: pointer; transition: 0.2s; box-shadow: 0 0 10px rgba(0,255,204,0.2);">+ Buat Playlist</button>
+          </div>
           <div id="library-albums-grid" class="library-grid">
             <!-- Injected by JS -->
           </div>
@@ -148,10 +151,11 @@
             </div>
             
             <!-- Action Buttons -->
-            <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 30px;">
+            <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 30px; flex-wrap: wrap;">
               <button id="btn-album-download" class="bp-btn" style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1);"><img class="pixel-icon" src="assets/icons/icon_down.bmp"></button>
               <button id="btn-album-edit" class="bp-btn" style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1);"><img class="pixel-icon" src="assets/icons/icon_edit.bmp"></button>
               <button id="library-detail-play" class="bp-btn" style="width: 60px; height: 60px; border-radius: 50%; background: #fff; color: #000; display: flex; justify-content: center; align-items: center; font-size: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);"><img class="pixel-icon" src="assets/icons/icon_play.bmp" style="fill: #000; filter: invert(1); margin-left: 4px;"></button>
+              <button id="btn-playlist-add-songs" class="bp-btn" style="width: auto; padding: 8px 18px; font-family: inherit; font-size: 13px; font-weight: bold; background: #00ffcc; color: #000; border-radius: 20px; cursor: pointer; display: none; box-shadow: 0 0 12px rgba(0,255,204,0.3);">+ Tambah Lagu</button>
               <button id="btn-album-share" class="bp-btn" style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1);"><img class="pixel-icon" src="assets/icons/icon_share.bmp"></button>
               <button id="btn-album-more" class="bp-btn" style="width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1);"><img class="pixel-icon" src="assets/icons/icon_more.bmp"></button>
             </div>
@@ -348,11 +352,89 @@
           <span style="font-size: 16px; color: #aaa;" title="Volume"><img class="pixel-icon" src="assets/icons/icon_volume.bmp"></span>
         </div>
         <button class="bp-btn small" id="bp-sfx-toggle" title="Suara Retro SFX: Aktif" style="font-family: inherit; font-size: 10px; font-weight: bold; color: #00ffcc; border: 1px solid #00ffcc; border-radius: 4px; padding: 2px 5px; width: auto; height: 24px; background: rgba(0,255,204,0.1); cursor: pointer;">SFX</button>
+        <button class="bp-btn small" id="bp-lyrics-btn" title="Lirik Karaoke (Shortcut: K)" style="font-family: inherit; font-size: 10px; font-weight: bold; color: #ff007f; border: 1px solid #ff007f; border-radius: 4px; padding: 2px 5px; width: auto; height: 24px; background: rgba(255,0,127,0.1); cursor: pointer;">LRC</button>
+        <button class="bp-btn small" id="bp-mini-btn" title="Mini Floating Player" style="font-family: inherit; font-size: 10px; font-weight: bold; color: #ffeb3b; border: 1px solid #ffeb3b; border-radius: 4px; padding: 2px 5px; width: auto; height: 24px; background: rgba(255,235,59,0.1); cursor: pointer;">MINI</button>
         <button class="bp-btn small" id="bp-repeat" title="Repeat" style="font-size: 16px; color: #777; transition: color 0.2s;"><img class="pixel-icon" src="assets/icons/icon_repeat.bmp"></button>
         <button class="bp-btn small" id="bp-shuffle" title="Shuffle" style="font-size: 16px; color: #777; transition: color 0.2s;"><img class="pixel-icon" src="assets/icons/icon_shuffle.bmp"></button>
+        <button class="bp-btn small" id="bp-queue-btn" title="Antrean Lagu (Shortcut: Q)" style="font-size: 16px; color: #aaa; transition: color 0.2s;"><img class="pixel-icon" src="assets/icons/icon_more.bmp"></button>
         <button class="bp-btn small" id="bp-toggle-player" style="margin-left: 5px;"><img class="pixel-icon" src="assets/icons/icon_up.bmp"></button>
       </div>
     </footer>
+  </div>
+
+  <!-- RETRO QUEUE (UP NEXT) DRAWER -->
+  <div id="queue-drawer" class="queue-drawer hidden">
+    <div class="queue-header">
+      <div style="font-size: 18px; font-weight: bold; color: #00ffcc;">Antrean Lagu (Up Next)</div>
+      <button id="btn-close-queue" class="bp-btn" style="font-size: 20px; color: #888;">✕</button>
+    </div>
+    <div class="queue-section-title">SEDANG DIPUTAR</div>
+    <div id="queue-now-playing" class="queue-now-playing">
+      <!-- Injected by JS -->
+    </div>
+    <div class="queue-section-title" style="margin-top: 15px;">SELANJUTNYA (<span id="queue-count">0</span>)</div>
+    <div id="queue-list" class="queue-list">
+      <!-- Injected by JS -->
+    </div>
+  </div>
+
+  <!-- RETRO KARAOKE LYRICS DRAWER -->
+  <div id="lyrics-drawer" class="lyrics-drawer hidden">
+    <div class="lyrics-header">
+      <div style="font-size: 18px; font-weight: bold; color: #ff007f;">🎤 Lirik Retro Karaoke</div>
+      <button id="btn-close-lyrics" class="bp-btn" style="font-size: 20px; color: #888;">✕</button>
+    </div>
+    <div class="lyrics-track-banner" id="lyrics-track-banner">
+      <div id="lyrics-title" style="font-size: 15px; font-weight: bold; color: #fff;">-</div>
+      <div id="lyrics-artist" style="font-size: 12px; color: #aaa;">-</div>
+    </div>
+    <div id="lyrics-content" class="lyrics-content">
+      <!-- Injected by JS -->
+    </div>
+  </div>
+
+  <!-- FLOATING MINI PLAYER WIDGET -->
+  <div id="mini-player-widget" class="mini-player-widget hidden">
+    <div class="mini-player-header">
+      <span style="font-size: 11px; color: #ffeb3b; font-weight: bold;">⚡ MINI PLAYER</span>
+      <button id="btn-expand-mini" class="bp-btn" style="font-size: 14px; color: #aaa;" title="Kembali ke Layar Penuh">⤢</button>
+    </div>
+    <div class="mini-player-body">
+      <div id="mini-art" class="mini-art"></div>
+      <div class="mini-info">
+        <div id="mini-title" class="mini-title">No Track</div>
+        <div id="mini-artist" class="mini-artist">-</div>
+      </div>
+    </div>
+    <div class="mini-player-controls">
+      <button id="mini-prev" class="bp-btn small"><img class="pixel-icon" src="assets/icons/icon_prev.bmp"></button>
+      <button id="mini-play" class="bp-btn small"><img class="pixel-icon" src="assets/icons/icon_play.bmp"></button>
+      <button id="mini-next" class="bp-btn small"><img class="pixel-icon" src="assets/icons/icon_next.bmp"></button>
+    </div>
+  </div>
+
+  <!-- RETRO MODAL (Create Playlist / Add to Playlist) -->
+  <div id="retro-modal-container" class="retro-modal-container hidden">
+    <div class="retro-modal-backdrop"></div>
+    <div class="retro-modal">
+      <div id="retro-modal-title" class="retro-modal-title">Judul Modal</div>
+      <div id="retro-modal-body" class="retro-modal-body">
+        <!-- Injected by JS -->
+      </div>
+      <div class="retro-modal-actions">
+        <button id="retro-modal-cancel" class="retro-btn secondary">Batal</button>
+        <button id="retro-modal-confirm" class="retro-btn primary">Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DRAG & DROP OVERLAY -->
+  <div id="drag-drop-overlay" class="drag-drop-overlay hidden">
+    <div class="drag-drop-box">
+      <div style="font-size: 48px; margin-bottom: 10px;">🎵</div>
+      <div style="font-size: 24px; font-weight: bold; color: #00ffcc; margin-bottom: 5px;">LEPASKAN MUSIK DI SINI!</div>
+      <div style="font-size: 14px; color: #aaa;">Mendukung berkas audio MP3, WAV, dan OGG</div>
+    </div>
   </div>
 
   <audio id="audio-player"></audio>
