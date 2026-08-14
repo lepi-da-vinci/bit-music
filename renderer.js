@@ -109,6 +109,7 @@ try {
       }
     }
 
+    if (added) playRetroSFX('like');
     showToast(added ? `"${track.title}" ditambahkan ke Lagu Disukai ❤️` : `"${track.title}" dihapus dari Lagu Disukai`);
     return added;
   }
@@ -126,6 +127,62 @@ try {
         likeBtn.classList.toggle('icon-active', isFavorite(filename));
       }
     });
+  }
+
+  // Retro UI Sound Effects Synthesizer
+  let isSfxEnabled = true;
+  function playRetroSFX(type) {
+    if (!isSfxEnabled) return;
+    try {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      if (type === 'click' || type === 'tab') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(880, now);
+        osc.frequency.exponentialRampToValueAtTime(1400, now + 0.03);
+        gain.gain.setValueAtTime(0.06, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+        osc.start(now);
+        osc.stop(now + 0.035);
+      } else if (type === 'play') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(440, now);
+        osc.frequency.setValueAtTime(554.37, now + 0.04);
+        osc.frequency.setValueAtTime(659.25, now + 0.08);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+        osc.start(now);
+        osc.stop(now + 0.13);
+      } else if (type === 'pause') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(659.25, now);
+        osc.frequency.setValueAtTime(523.25, now + 0.05);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+        osc.start(now);
+        osc.stop(now + 0.11);
+      } else if (type === 'like') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(392.00, now);
+        osc.frequency.setValueAtTime(523.25, now + 0.03);
+        osc.frequency.setValueAtTime(659.25, now + 0.06);
+        osc.frequency.setValueAtTime(783.99, now + 0.09);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+        osc.start(now);
+        osc.stop(now + 0.17);
+      }
+    } catch (e) {}
   }
 
   // Web Audio API for Bass Glow and Visualizer
@@ -187,7 +244,7 @@ try {
     dataArray = new Uint8Array(analyser.frequencyBinCount);
 
     const canvas = document.getElementById('lcd-canvas');
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas ? canvas.getContext('2d') : null;
     
     // Setup VU Meter LEDs
     const vuL = document.getElementById('vu-l');
@@ -219,7 +276,12 @@ try {
       // Stop rendering visualizer if completely stopped
       if (currentPlaybackRate < 0.01 && !isPlaying && !isVinylDragging) {
         vinylContainer.style.boxShadow = 'none';
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const bpCanvas = document.getElementById('bp-visualizer');
+        if (bpCanvas) {
+          const bpCtx = bpCanvas.getContext('2d');
+          bpCtx.clearRect(0, 0, bpCanvas.width, bpCanvas.height);
+        }
         if (noiseGain) noiseGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
         return;
       }
@@ -235,29 +297,65 @@ try {
       
       // Rotate Vinyl manually
       if (!isVinylDragging) {
-        vinylRotation += 2 * currentPlaybackRate; // ~3s per rotation at 1.0x
+        vinylRotation += 2 * currentPlaybackRate;
         vinylContainer.style.transform = `rotate(${vinylRotation}deg)`;
       }
       
-      // Update canvas dimensions if needed
-      if (canvas.width !== canvas.offsetWidth) canvas.width = canvas.offsetWidth;
-      if (canvas.height !== canvas.offsetHeight) canvas.height = canvas.offsetHeight;
-
       analyser.getByteFrequencyData(dataArray);
-      
-      // Draw Spectrum Analyzer
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const barWidth = (canvas.width / 15) - 2;
-      let x = 0;
-      
-      for (let i = 0; i < 15; i++) {
-        // Skip some very low frequencies, take steps
-        const dataIndex = i * 2 + 2; 
-        const barHeight = (dataArray[dataIndex] / 255) * canvas.height;
+
+      // 1. Draw LCD Turntable Spectrum Analyzer
+      if (canvas && ctx) {
+        if (canvas.width !== canvas.offsetWidth) canvas.width = canvas.offsetWidth;
+        if (canvas.height !== canvas.offsetHeight) canvas.height = canvas.offsetHeight;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const barWidth = (canvas.width / 15) - 2;
+        let x = 0;
         
-        ctx.fillStyle = `rgba(100, 255, 120, ${0.4 + (barHeight/canvas.height)*0.6})`;
-        ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
-        x += barWidth + 2;
+        for (let i = 0; i < 15; i++) {
+          const dataIndex = i * 2 + 2; 
+          const barHeight = (dataArray[dataIndex] / 255) * canvas.height;
+          
+          ctx.fillStyle = `rgba(100, 255, 120, ${0.4 + (barHeight/canvas.height)*0.6})`;
+          ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+          x += barWidth + 2;
+        }
+      }
+
+      // 2. Draw Bottom Player 8-Bit Stepped Pixel Spectrum
+      const bpCanvas = document.getElementById('bp-visualizer');
+      if (bpCanvas) {
+        const bpCtx = bpCanvas.getContext('2d');
+        bpCtx.clearRect(0, 0, bpCanvas.width, bpCanvas.height);
+        
+        const numBars = 12;
+        const barWidth = Math.floor((bpCanvas.width - 4) / numBars) - 2;
+        const blockHeight = 3;
+        const blockGap = 1;
+        const maxBlocks = Math.floor(bpCanvas.height / (blockHeight + blockGap));
+        
+        for (let i = 0; i < numBars; i++) {
+          const dataIndex = Math.floor(i * 3 + 2);
+          const rawVal = dataArray[dataIndex] || 0;
+          const barHeightRatio = rawVal / 255;
+          const numBlocks = Math.floor(barHeightRatio * maxBlocks);
+          const x = 2 + i * (barWidth + 2);
+          
+          for (let b = 0; b < numBlocks; b++) {
+            const y = bpCanvas.height - (b + 1) * (blockHeight + blockGap);
+            // 8-bit Neon Palette Steps
+            if (b >= maxBlocks - 2) {
+              bpCtx.fillStyle = '#ff0055'; // Hot pink / Red peak
+            } else if (b >= maxBlocks - 4) {
+              bpCtx.fillStyle = '#ffff00'; // Yellow
+            } else if (b >= 2) {
+              bpCtx.fillStyle = '#39ff14'; // Neon Green
+            } else {
+              bpCtx.fillStyle = '#00ffcc'; // Cyan base
+            }
+            bpCtx.fillRect(x, y, barWidth, blockHeight);
+          }
+        }
       }
 
       // Get average of lower frequencies for bass
@@ -766,6 +864,7 @@ try {
 
           document.querySelectorAll('.mood-chip').forEach(chip => {
             chip.onclick = () => {
+              playRetroSFX('click');
               document.querySelectorAll('.mood-chip').forEach(c => c.classList.remove('active'));
               chip.classList.add('active');
               const mood = chip.getAttribute('data-mood') || chip.innerText.toLowerCase();
@@ -924,21 +1023,19 @@ try {
 
   function playTrack() {
     initAudioVisualizer();
-    if (audioCtx.state === 'suspended') audioCtx.resume();
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
 
     if (currentIndex === -1 && playlist.length > 0) loadTrack(0);
-    if (audio.paused) {
-      audio.play();
+    
+    audio.play().then(() => {
       isPlaying = true;
       playBtnIcon.src = window.api.getAssetPath('btn_start_stop_active.png');
       if (bpPlay) bpPlay.innerHTML = ICONS.pause;
-    } else {
-      audio.pause();
-      isPlaying = false;
-      playBtnIcon.src = window.api.getAssetPath('btn_start_stop.png');
-      if (bpPlay) bpPlay.innerHTML = ICONS.play;
-    }
-    updateToneArm();
+      updateToneArm();
+      playRetroSFX('play');
+    }).catch(err => {
+      console.log("Audio play error:", err);
+    });
   }
 
   function pauseTrack() {
@@ -946,8 +1043,9 @@ try {
     audio.pause();
     currentPlaybackRate = 0;
     playBtnIcon.src = window.api.getAssetPath('btn_start_stop.png');
-    if (bpPlay) bpPlay.innerText = '▶';
-    toneArm.style.transform = 'rotate(-32deg) scale(0.8)';
+    if (bpPlay) bpPlay.innerHTML = ICONS.play;
+    if (toneArm) toneArm.style.transform = 'rotate(-32deg) scale(0.8)';
+    playRetroSFX('pause');
   }
 
   function togglePlay() {
@@ -963,10 +1061,14 @@ function formatTime(seconds) {
 }
 
 function updateToneArm() {
-  if (!isPlaying && !isToneArmDragging) return;
+  if (!toneArm) return;
+  if (!isPlaying && !isToneArmDragging) {
+    toneArm.style.transform = 'rotate(-32deg) scale(0.8)';
+    return;
+  }
   const pct = (audio.currentTime && audio.duration) ? (audio.currentTime / audio.duration) : 0;
-  // Starts at outer edge (-16 deg), moves inward to inner groove (+4 deg)
-  const targetAngle = -16 + (pct * 20); 
+  // Starts at outer edge (-14 deg), moves inward to inner groove (+2 deg)
+  const targetAngle = -14 + (pct * 16); 
   toneArm.style.transform = `rotate(${targetAngle}deg) scale(0.8)`;
 }
 
@@ -1394,6 +1496,7 @@ function updateToneArm() {
   if (navHome) {
     navHome.onclick = (e) => {
       e.preventDefault();
+      playRetroSFX('tab');
       if (playerView) playerView.classList.add('hidden');
       if (libraryView) libraryView.classList.add('hidden');
       if (exploreView) exploreView.classList.add('hidden');
@@ -1407,6 +1510,7 @@ function updateToneArm() {
   if (navLibrary) {
     navLibrary.onclick = (e) => {
       e.preventDefault();
+      playRetroSFX('tab');
       if (playerView) playerView.classList.add('hidden');
       if (homeView) homeView.classList.add('hidden');
       if (exploreView) exploreView.classList.add('hidden');
@@ -1421,6 +1525,7 @@ function updateToneArm() {
   if (navExplore) {
     navExplore.onclick = (e) => {
       e.preventDefault();
+      playRetroSFX('tab');
       if (playerView) playerView.classList.add('hidden');
       if (homeView) homeView.classList.add('hidden');
       if (libraryView) libraryView.classList.add('hidden');
@@ -1429,6 +1534,27 @@ function updateToneArm() {
       navExplore.classList.add('active');
       if (navHome) navHome.classList.remove('active');
       if (navLibrary) navLibrary.classList.remove('active');
+    };
+  }
+
+  const bpSfxToggle = document.getElementById('bp-sfx-toggle');
+  if (bpSfxToggle) {
+    bpSfxToggle.onclick = () => {
+      isSfxEnabled = !isSfxEnabled;
+      if (isSfxEnabled) {
+        bpSfxToggle.style.color = '#00ffcc';
+        bpSfxToggle.style.borderColor = '#00ffcc';
+        bpSfxToggle.style.background = 'rgba(0,255,204,0.1)';
+        bpSfxToggle.title = 'Suara Retro SFX: Aktif';
+        playRetroSFX('click');
+        showToast('Efek Suara Retro: Aktif 🔊');
+      } else {
+        bpSfxToggle.style.color = '#666';
+        bpSfxToggle.style.borderColor = '#444';
+        bpSfxToggle.style.background = 'transparent';
+        bpSfxToggle.title = 'Suara Retro SFX: Mati';
+        showToast('Efek Suara Retro: Mati 🔇');
+      }
     };
   }
 
@@ -1444,6 +1570,7 @@ function updateToneArm() {
   const bpDislike = document.getElementById('bp-dislike');
   if (bpDislike) bpDislike.onclick = () => {
     bpDislike.classList.toggle('icon-active');
+    playRetroSFX('click');
     showToast(bpDislike.classList.contains('icon-active') ? 'Lagu tidak disukai' : 'Lagu batal tidak disukai');
   };
 
