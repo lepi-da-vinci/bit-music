@@ -1294,206 +1294,6 @@ try {
 [00:15.00]Because you only want me when I'm looking good
 [00:20.00]The boy's a liar, the boy's a liar`,
 
-    'cash cash - hero': `[00:00.00]♪ Cash Cash - Hero (feat. Christina Perri) ♪
-[00:12.00]I've been waiting for a superhero
-[00:16.50]To save me from the dark
-[00:21.00]You came into my life and gave me
-[00:25.50]A brand new spark
-[00:30.00]You're my hero, you're my light`,
-
-    'cheap thrills': `[00:00.00]♪ Sia - Cheap Thrills ♪
-[00:08.00]Come on, come on, turn the radio on
-[00:11.50]It's Friday night and I won't be long
-[00:15.00]Gotta do my hair, put my make-up on
-[00:18.50]It's Friday night and I won't be long
-[00:22.50]I love cheap thrills, I don't need no money
-[00:27.50]As long as I can feel the beat`,
-
-    'circles': `[00:00.00]♪ Post Malone - Circles ♪
-[00:10.00]We couldn't turn the page, run away, but we're running in circles
-[00:17.00]Run away, run away
-[00:21.00]I dare you to do something, I'm waiting on you again
-[00:27.50]So I don't take the blame
-[00:32.00]Seasons change and our love went cold
-[00:37.50]Feed the flame 'cause we can't let go`,
-
-    'clean bandit - symphony': `[00:00.00]♪ Clean Bandit - Symphony (feat. Zara Larsson) ♪
-[00:10.00]I've been hearing symphonies
-[00:14.50]Before all I heard was silence
-[00:19.00]A rhapsody for you and me
-[00:23.50]And every melody is timeless
-[00:28.00]And now your song is on repeat
-[00:32.50]And I'm dancin' on to your heartbeat`,
-
-    'cloud 9': `[00:00.00]♪ Beach Bunny - Cloud 9 ♪
-[00:08.00]I don't wanna seem the way I do
-[00:11.50]But I'm confident when I'm with you
-[00:15.00]Lately, all I think about is you
-[00:18.50]You make me feel like I'm on Cloud 9`,
-
-    'cupid': `[00:00.00]♪ FIFTY FIFTY - Cupid (Twin Ver.) ♪
-[00:08.00]A hopeless romantic all my life
-[00:11.50]Surrounded by couples all the time
-[00:15.00]I guess I should take it as a sign
-[00:18.50]Oh why, oh why, oh why?
-[00:22.50]I gave a second chance to Cupid
-[00:26.50]But now I'm left here feeling stupid`,
-
-    'every summertime': `[00:00.00]♪ NIKI - Every Summertime ♪
-[00:08.00]Eighteen, we were falling in love
-[00:12.00]Her heart was beating in my chest
-[00:16.00]Sunflowers in the summer breeze
-[00:20.00]Living in our teenage dreams
-[00:25.00]Every summertime with you
-[00:30.00]Feels like magic coming through`,
-
-    'fallen': `[00:00.00]♪ Jaden - Fallen ♪
-[00:10.00]Baby, I've fallen for you
-[00:16.00]Into the deep ocean blue
-[00:22.00]Can't escape the way I feel
-[00:28.00]Your love is something real`,
-
-    'freaks': `[00:00.00]♪ Surf Curse - Freaks ♪
-[00:06.00]Don't kill me, just help me run away
-[00:12.00]From everyone, I need a place to stay
-[00:18.00]Where I can cover up my face
-[00:24.00]Don't cry, I am just a freak
-[00:30.00]I am just a freak`,
-
-    'heartbreak anniversary': `[00:00.00]♪ Giveon - Heartbreak Anniversary ♪
-[00:10.00]Ooh, walk in the door, look at my phone
-[00:15.50]Another heartbreak anniversary
-[00:21.00]'Cause I remember every word you said
-[00:26.50]Still rolling in my head
-[00:32.00]I build a house with memories
-[00:37.50]On this heartbreak anniversary`,
-
-    'here with me': `[00:00.00]♪ d4vd - Here With Me ♪
-[00:10.00]Watch the sunrise along the coast
-[00:15.00]As we're talking, I'd share them with you
-[00:20.00]And I don't care if the world falls apart
-[00:25.00]As long as you're here with me`,
-
-    'hurts so good': `[00:00.00]♪ Astrid S - Hurts So Good ♪
-[00:08.00]When it hurts, but it hurts so good
-[00:12.50]Do you take it, do you break it?
-[00:17.00]Like you knew you would
-[00:21.50]Your love is dangerous, but it hurts so good`,
-
-    'i dont care': `[00:00.00]♪ Ed Sheeran & Justin Bieber - I Don't Care ♪
-[00:08.00]'Cause I don't care when I'm with my baby, yeah
-[00:12.50]All the bad things disappear
-[00:16.00]Yeah, you're making me feel like maybe I am somebody
-[00:20.50]I can deal with the bad nights
-[00:24.00]When I'm with my baby, yeah`,
-
-    'i like me better': `[00:00.00]♪ Lauv - I Like Me Better ♪
-[00:08.00]To be young and in love in New York City
-[00:12.50]To not know who I am but still know that I'm good long as you're here with me
-[00:18.00]I like me better when I'm with you
-[00:23.00]I knew from the first time, I'd stay for a long time`,
-
-    'im done waiting': `[00:00.00]♪ Windshield - I'm Done Waiting ♪
-[00:10.00]I'm done waiting on the sidelines
-[00:16.00]Step into the bright neon lights
-[00:22.00]Take my future in my hands
-[00:28.00]Making all my own demands`,
-
-    'khalid - young dumb broke': `[00:00.00]♪ Khalid - Young Dumb & Broke ♪
-[00:10.00]So you're still thinking of me
-[00:14.00]Just like I know you should
-[00:18.00]I can not give you everything, you know I wish I could
-[00:24.00]Young dumb, young, young dumb and broke`,
-
-    'kill bill': `[00:00.00]♪ SZA - Kill Bill ♪
-[00:08.00]I might kill my ex, not the best idea
-[00:12.50]His new girlfriend's next, how'd I get here?
-[00:17.00]I might kill my ex, I still love him though
-[00:21.50]Rather be in jail than alone`,
-
-    'let her go': `[00:00.00]♪ Passenger - Let Her Go ♪
-[00:15.00]Well you only need the light when it's burning low
-[00:19.50]Only miss the sun when it starts to snow
-[00:24.00]Only know you love her when you let her go
-[00:30.00]Only know you've been high when you're feeling low`,
-
-    'ravyn lenae - love me not': `[00:00.00]♪ Ravyn Lenae - Love Me Not ♪
-[00:10.00]Tell me do you love me or love me not?
-[00:16.00]Pulling petals in the parking lot
-[00:22.00]Whispering words in the summer breeze
-[00:28.00]Bring me down to my bending knees`,
-
-    'she him - i thought i saw your face today': `[00:00.00]♪ She & Him - I Thought I Saw Your Face Today ♪
-[00:12.00]I thought I saw your face today
-[00:18.00]In the crowd as I walked away
-[00:24.00]A bittersweet nostalgia in the air
-[00:30.00]Wishing that you were truly there`,
-
-    'shelter': `[00:00.00]♪ Porter Robinson & Madeon - Shelter ♪
-[00:15.00]I could never find the right words to say
-[00:21.00]Though I'm walking, you are so far away
-[00:27.00]And it's a long way forward, so trust in me
-[00:33.00]I'll give them shelter, like you've done for me`,
-
-    'sofia': `[00:00.00]♪ Clairo - Sofia ♪
-[00:08.00]Sofia, the things that you do to me
-[00:13.00]I think we could do it so easily
-[00:18.00]You know you can tell me anything
-[00:23.00]Sofia, the things that you do to me`,
-
-    'still got time': `[00:00.00]♪ ZAYN - Still Got Time (feat. PARTYNEXTDOOR) ♪
-[00:08.00]Just stop looking for love
-[00:11.50]Girl, you're still young, you got plenty of time
-[00:16.00]To find what you need
-[00:19.50]We still got time to make it right`,
-
-    'stuck in space': `[00:00.00]♪ Miles Away - Stuck In Space ♪
-[00:10.00]Floating around in zero gravity
-[00:16.00]Lost in the cosmic galaxy
-[00:22.00]Stuck in space with your memory
-[00:28.00]Echoes of our sweet melody`,
-
-    'sunflower': `[00:00.00]♪ Post Malone & Swae Lee - Sunflower ♪
-[00:06.00]Needless to say, I keep her in check
-[00:09.50]She was all bad-bad, nevertheless
-[00:13.00]Callin' it quits now, baby, I'm a wreck
-[00:16.50]Crash at my place, baby, you're a wreck
-[00:20.00]Then you're left in the dust, unless I stuck by ya
-[00:24.50]You're the sunflower, I think your love would be too much`,
-
-    'take me to the beach': `[00:00.00]♪ Imagine Dragons - Take Me to the Beach ♪
-[00:08.00]Take me to the beach, wash away the stress
-[00:14.00]Feel the ocean breeze, nothing more or less
-[00:20.00]Walking on the golden sand
-[00:26.00]Holding your hand in wonderland`,
-
-    'this side of paradise': `[00:00.00]♪ Coyote Theory - This Side of Paradise ♪
-[00:08.00]Ask me why my heart's inside my throat
-[00:12.00]I've never been in love, I've been alone
-[00:16.00]Feel like I've been floating far from home
-[00:20.00]So if you're lonely, no need to show
-[00:24.50]Come hold my hand, my heart will follow`,
-
-    'youth': `[00:00.00]♪ Troye Sivan - YOUTH ♪
-[00:08.00]What if, what if we run away?
-[00:12.00]What if, what if we left today?
-[00:16.00]My youth, my youth is yours
-[00:20.00]Trippin' on skies, sippin' waterfalls
-[00:24.00]My youth, my youth is yours`,
-
-    'double take': `[00:00.00]♪ dhruv - double take ♪
-[00:08.00]And if you say so, boy I will follow
-[00:12.50]Don't think about it, we'll talk tomorrow
-[00:17.00]Do you love me, do you love me not?
-[00:21.50]I caught you staring, did a double take`,
-
-    'anti hero': `[00:00.00]♪ Taylor Swift / SEKAI NO OWARI - Anti-Hero ♪
-[00:08.00]I have this thing where I get older, but just never wiser
-[00:13.00]Midnights become my afternoons
-[00:17.00]When my depression works the graveyard shift
-[00:21.00]All of the people I've ghosted stand there in the room
-[00:26.00]It's me, hi, I'm the problem, it's me`,
-
     'pak vramroro': `[00:00.00]♪ Aestheards - Pak Vramroro Fufufafa ♪
 [00:10.00]Ketukan nada retro di tengah kota
 [00:16.00]Alunan chiptune penuh canda tawa
@@ -1536,6 +1336,12 @@ try {
     });
 
     result.sort((a, b) => a.time - b.time);
+
+    // If first lyric is after 3.5 seconds, add an Intro marker so lyrics are not shown prematurely
+    if (result.length > 0 && result[0].time > 3.5) {
+      result.unshift({ time: 0, text: '🎵 [Intro Instrumental]' });
+    }
+
     return result;
   }
 
@@ -1546,28 +1352,52 @@ try {
       cleanTitle = cleanTitle.replace(/\(Official[^\)]*\)/gi, '');
       cleanTitle = cleanTitle.replace(/\(feat[^\)]*\)/gi, '');
       cleanTitle = cleanTitle.replace(/_ Lyrics[^\)]*/gi, '');
+      cleanTitle = cleanTitle.replace(/– Twin Ver\./gi, '');
+      cleanTitle = cleanTitle.replace(/\(Spider-Man[^\)]*\)/gi, '');
       cleanTitle = cleanTitle.trim();
 
       let cleanArtist = (artist || '').replace(/- Topic/gi, '').trim();
       if (cleanArtist === 'Unknown Artist') cleanArtist = '';
 
-      let url = `https://lrclib.net/api/get?track_name=${encodeURIComponent(cleanTitle)}`;
-      if (cleanArtist) url += `&artist_name=${encodeURIComponent(cleanArtist)}`;
-
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 1800);
+      const timeoutId = setTimeout(() => controller.abort(), 2500);
 
-      const res = await fetch(url, { signal: controller.signal });
+      // 1. Direct GET endpoint
+      try {
+        let url = `https://lrclib.net/api/get?track_name=${encodeURIComponent(cleanTitle)}`;
+        if (cleanArtist) url += `&artist_name=${encodeURIComponent(cleanArtist)}`;
+        const res = await fetch(url, { signal: controller.signal });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.syncedLyrics && data.syncedLyrics.length > 30) {
+            clearTimeout(timeoutId);
+            return { synced: true, content: data.syncedLyrics };
+          }
+        }
+      } catch (e) {}
+
+      // 2. Search endpoint fallback (broad match)
+      try {
+        const searchQuery = cleanArtist ? `${cleanTitle} ${cleanArtist}` : cleanTitle;
+        const searchRes = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(searchQuery)}`, { signal: controller.signal });
+        if (searchRes.ok) {
+          const list = await searchRes.json();
+          if (Array.isArray(list) && list.length > 0) {
+            const syncedItem = list.find(item => item.syncedLyrics && item.syncedLyrics.length > 30);
+            if (syncedItem) {
+              clearTimeout(timeoutId);
+              return { synced: true, content: syncedItem.syncedLyrics };
+            }
+            if (list[0].plainLyrics) {
+              clearTimeout(timeoutId);
+              return { synced: false, content: list[0].plainLyrics };
+            }
+          }
+        }
+      } catch (e) {}
+
       clearTimeout(timeoutId);
-
-      if (res.ok) {
-        const data = await res.json();
-        if (data.syncedLyrics) return { synced: true, content: data.syncedLyrics };
-        if (data.plainLyrics) return { synced: false, content: data.plainLyrics };
-      }
-    } catch (err) {
-      // Abort or network failure
-    }
+    } catch (err) {}
     return null;
   }
 
@@ -1614,7 +1444,7 @@ try {
 
     lyricsList.forEach((item, idx) => {
       const lineEl = document.createElement('div');
-      lineEl.className = `lyrics-line ${idx === 0 ? 'active' : ''}`;
+      lineEl.className = 'lyrics-line'; // Do NOT highlight until song reaches time
       lineEl.id = `lyric-line-${idx}`;
       lineEl.innerText = item.text;
       lineEl.title = `Klik untuk lompat ke detik ${Math.round(item.time)}`;
@@ -1643,6 +1473,9 @@ try {
       playRetroSFX('click');
       showToast('⏱️ Offset Lirik direset ke 0.0s');
     };
+
+    // Immediate sync check with current playback position
+    syncLyricsTime(audio.currentTime);
   }
 
   async function updateLyricsDrawer(forceReload = false) {
@@ -1674,22 +1507,12 @@ try {
     const cleanFn = (track.filename || track.title || '').toLowerCase().replace(/\.[^/.]+$/, '').trim();
     const cleanAlpha = cleanFn.replace(/[^a-z0-9]/g, '');
 
-    // 1. INSTANT CHECK: Memory Built-in Map (0ms)
-    for (const [key, lrcVal] of Object.entries(BUILTIN_LRC)) {
-      const keyAlpha = key.replace(/[^a-z0-9]/g, '');
-      if (cleanAlpha.includes(keyAlpha) || keyAlpha.includes(cleanAlpha)) {
-        currentLyrics = parseLRC(lrcVal);
-        renderLyricsUI(currentLyrics, '📁 LIRIK LOKAL (lyrics/)');
-        return;
-      }
-    }
-
-    // 2. FAST CHECK: Local lyrics/ folder via direct fetch & IPC
+    // 1. FAST CHECK: Local lyrics/ folder via direct fetch & IPC
     try {
       const directRes = await fetch(`lyrics/${encodeURIComponent(track.filename.replace(/\.[^/.]+$/, ''))}.lrc`);
       if (directRes.ok) {
         const txt = await directRes.text();
-        if (txt && txt.length > 10) {
+        if (txt && txt.length > 30) {
           currentLyrics = parseLRC(txt);
           renderLyricsUI(currentLyrics, '📁 LIRIK LOKAL (lyrics/)');
           return;
@@ -1700,7 +1523,7 @@ try {
     if (window.api && window.api.readLyric) {
       try {
         const localRes = await window.api.readLyric(track.filename);
-        if (localRes && localRes.success && localRes.content) {
+        if (localRes && localRes.success && localRes.content && localRes.content.length > 30) {
           currentLyrics = parseLRC(localRes.content);
           if (currentLyrics.length > 0) {
             renderLyricsUI(currentLyrics, '📁 LIRIK LOKAL (lyrics/)');
@@ -1710,11 +1533,21 @@ try {
       } catch (e) {}
     }
 
-    // 3. Online Search with loading indicator (max 1.8s)
+    // 2. CHECK: Memory Built-in Map for Indonesian / Special Indie Tracks
+    for (const [key, lrcVal] of Object.entries(BUILTIN_LRC)) {
+      const keyAlpha = key.replace(/[^a-z0-9]/g, '');
+      if (cleanAlpha.includes(keyAlpha) || keyAlpha.includes(cleanAlpha)) {
+        currentLyrics = parseLRC(lrcVal);
+        renderLyricsUI(currentLyrics, '📁 LIRIK LOKAL (lyrics/)');
+        return;
+      }
+    }
+
+    // 3. Online Search with loading indicator (max 2.5s)
     lyricsContent.innerHTML = `
       <div style="color: #00ffcc; font-size: 14px; padding: 40px 0; text-align: center;">
         <div style="font-size: 24px; margin-bottom: 8px;">⏳</div>
-        <div>Mencari lirik di internet...</div>
+        <div>Mencari lirik sinkron di database online...</div>
       </div>
     `;
 
@@ -1725,7 +1558,7 @@ try {
         if (window.api && window.api.saveLyric) {
           window.api.saveLyric({ filename: track.filename, content: onlineResult.content });
         }
-        renderLyricsUI(currentLyrics, '🌐 LIRIK ONLINE (TERSIMPAN)');
+        renderLyricsUI(currentLyrics, '🌐 LIRIK SINKRON ONLINE');
         return;
       } else {
         const plainLines = onlineResult.content.split('\n').filter(l => l.trim().length > 0);
@@ -1759,14 +1592,14 @@ try {
   function syncLyricsTime(currentTime) {
     if (!currentLyrics || currentLyrics.length === 0) return;
     const effectiveTime = currentTime + currentLyricOffset;
-    let activeIdx = 0;
+    let activeIdx = -1;
     for (let i = 0; i < currentLyrics.length; i++) {
       if (effectiveTime >= currentLyrics[i].time) {
         activeIdx = i;
       }
     }
     document.querySelectorAll('.lyrics-line').forEach((el, idx) => {
-      if (idx === activeIdx) {
+      if (idx === activeIdx && activeIdx >= 0) {
         if (!el.classList.contains('active')) {
           el.classList.add('active');
           el.scrollIntoView({ behavior: 'smooth', block: 'center' });
