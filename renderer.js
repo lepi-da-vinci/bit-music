@@ -10,6 +10,8 @@ try {
 
   let masterPlaylist = [];
   let playlist = [];
+  let albumMap = {};
+  let currentActiveAlbum = 'all';
   let currentIndex = -1;
   let isPlaying = false;
   let isShuffled = false;
@@ -1034,43 +1036,97 @@ try {
         playlist = [...masterPlaylist];
 
         // Group by Album
-        const albumMap = {};
+        albumMap = {};
         masterPlaylist.forEach(t => {
           if (!albumMap[t.album]) albumMap[t.album] = [];
           albumMap[t.album].push(t);
         });
 
-        // Render Albums
-        const albumContainer = document.getElementById('album-list');
-        if (albumContainer) {
-          albumContainer.innerHTML = `
-          <div class="album-item active" data-album="all">
-            <div class="album-title">All Tracks</div>
-            <div class="album-tracks">${masterPlaylist.length} tracks</div>
-          </div>
+        // Function to render album list in Left Pillar of Turntable Player
+        function renderPlayerAlbumList() {
+          const albumContainer = document.getElementById('album-list');
+          if (!albumContainer) return;
+
+          let html = `
+            <div class="album-item ${currentActiveAlbum === 'all' ? 'active' : ''}" data-album="all">
+              <div class="album-title">All Tracks</div>
+              <div class="album-tracks">${masterPlaylist.length} tracks</div>
+            </div>
+            <div class="album-item ${currentActiveAlbum === '__LIKED_SONGS__' ? 'active' : ''}" data-album="__LIKED_SONGS__">
+              <div class="album-title">❤️ Lagu Disukai</div>
+              <div class="album-tracks">${masterPlaylist.filter(t => isFavorite(t.filename)).length} tracks</div>
+            </div>
           `;
-          
+
+          const customPlaylists = getCustomPlaylists();
+          customPlaylists.forEach(pl => {
+            html += `
+              <div class="album-item ${currentActiveAlbum === 'CUSTOM_' + pl.id ? 'active' : ''}" data-album="CUSTOM_${pl.id}">
+                <div class="album-title">📀 ${pl.name}</div>
+                <div class="album-tracks">${pl.trackFilenames.length} tracks</div>
+              </div>
+            `;
+          });
+
           Object.keys(albumMap).forEach(albumName => {
             const tracks = albumMap[albumName];
-            albumContainer.innerHTML += `
-            <div class="album-item" data-album="${albumName}">
-              <div class="album-title">${albumName}</div>
-              <div class="album-tracks">${tracks.length} tracks</div>
+            html += `
+              <div class="album-item ${currentActiveAlbum === albumName ? 'active' : ''}" data-album="${albumName}">
+                <div class="album-title">${albumName}</div>
+                <div class="album-tracks">${tracks.length} tracks</div>
+              </div>
+            `;
+          });
+
+          albumContainer.innerHTML = html;
+
+          albumContainer.querySelectorAll('.album-item').forEach(el => {
+            el.onclick = () => {
+              const selectedAlbum = el.getAttribute('data-album');
+              currentActiveAlbum = selectedAlbum;
+              albumContainer.querySelectorAll('.album-item').forEach(a => a.classList.remove('active'));
+              el.classList.add('active');
+
+              if (selectedAlbum === 'all') {
+                playlist = [...masterPlaylist];
+              } else if (selectedAlbum === '__LIKED_SONGS__') {
+                playlist = masterPlaylist.filter(t => isFavorite(t.filename));
+              } else if (selectedAlbum.startsWith('CUSTOM_')) {
+                const plId = selectedAlbum.replace('CUSTOM_', '');
+                const pl = getCustomPlaylists().find(p => p.id === plId);
+                playlist = pl ? masterPlaylist.filter(t => pl.trackFilenames.includes(t.filename)) : [];
+              } else {
+                playlist = albumMap[selectedAlbum] || [];
+              }
+
+              renderPlaylist();
+              if (playlist.length > 0) {
+                loadTrack(0);
+                playTrack();
+              } else {
+                showToast('Album/Playlist ini belum memiliki lagu');
+              }
+            };
+          });
+        }
+
+        renderPlayerAlbumList();
+
+        // Populate Home Carousel
+        if (homeAlbums) {
+          homeAlbums.innerHTML = '';
+          Object.keys(albumMap).forEach(albumName => {
+            const tracks = albumMap[albumName];
+            const cover = tracks[0].coverBase64 ? `url('${tracks[0].coverBase64}')` : '#222';
+            homeAlbums.innerHTML += `
+            <div class="album-card" data-album="${albumName}">
+              <div class="album-card-art" style="background: ${cover}; background-size: cover; background-position: center;"></div>
+              <div class="album-card-title">${albumName}</div>
+              <div class="album-card-artist">${tracks[0].artist}</div>
             </div>
             `;
-            
-            // Populate Home Carousel
-            if (homeAlbums) {
-              const cover = tracks[0].coverBase64 ? `url('${tracks[0].coverBase64}')` : '#222';
-              homeAlbums.innerHTML += `
-              <div class="album-card" data-album="${albumName}">
-                <div class="album-card-art" style="background: ${cover}; background-size: cover; background-position: center;"></div>
-                <div class="album-card-title">${albumName}</div>
-                <div class="album-card-artist">${tracks[0].artist}</div>
-              </div>
-              `;
-            }
           });
+        }
 
           // Function to Render Library Grid (including Liked Songs & Custom Playlists)
           function renderLibraryGrid() {
@@ -1246,6 +1302,8 @@ try {
                       showToast('Tidak ada lagu untuk diputar!');
                       return;
                     }
+                    currentActiveAlbum = selectedAlbum;
+                    renderPlayerAlbumList();
                     playlist = [...tracks];
                     renderPlaylist();
                     
@@ -1269,6 +1327,7 @@ try {
                         libraryAlbumDetail.classList.add('hidden');
                         libraryAlbumsContainer.classList.remove('hidden');
                         renderLibraryGrid();
+                        renderPlayerAlbumList();
                       }
                     } else {
                       showToast('Opsi album...');
@@ -1280,6 +1339,8 @@ try {
                 tracklistContainer.querySelectorAll('.library-track-item').forEach(trackEl => {
                   trackEl.onclick = () => {
                     const trackIdx = parseInt(trackEl.getAttribute('data-index'));
+                    currentActiveAlbum = selectedAlbum;
+                    renderPlayerAlbumList();
                     playlist = [...tracks];
                     renderPlaylist();
                     
@@ -1385,7 +1446,9 @@ try {
             carousel.querySelectorAll('.album-card').forEach(el => {
               el.onclick = () => {
                 const selectedAlbum = el.getAttribute('data-album');
-                playlist = albumMap[selectedAlbum];
+                currentActiveAlbum = selectedAlbum;
+                renderPlayerAlbumList();
+                playlist = albumMap[selectedAlbum] || [];
                 
                 // Switch to Player View
                 previousView = document.getElementById('explore-view') && !document.getElementById('explore-view').classList.contains('hidden') ? 'explore' : 'home';
@@ -1550,28 +1613,6 @@ try {
               }
             };
           });
-          
-          // Bind clicks
-          document.querySelectorAll('.album-item').forEach(el => {
-            el.onclick = () => {
-              document.querySelectorAll('.album-item').forEach(a => a.classList.remove('active'));
-              el.classList.add('active');
-              
-              const selectedAlbum = el.getAttribute('data-album');
-              if (selectedAlbum === 'all') {
-                playlist = [...masterPlaylist];
-              } else {
-                playlist = albumMap[selectedAlbum];
-              }
-              
-              renderPlaylist();
-              if (playlist.length > 0) {
-                loadTrack(0);
-                playTrack();
-              }
-            };
-          });
-        }
 
         renderPlaylist();
         if (playlist.length > 0) {
@@ -1615,17 +1656,14 @@ try {
     });
 
     // Also update active album item in left pillar
-    const currentTrack = playlist[currentIndex];
-    if (currentTrack) {
-      document.querySelectorAll('.album-item').forEach(el => {
-        const alb = el.getAttribute('data-album');
-        if (alb === currentTrack.album || (playlist.length === masterPlaylist.length && alb === 'all')) {
-          el.classList.add('active');
-        } else {
-          el.classList.remove('active');
-        }
-      });
-    }
+    document.querySelectorAll('.album-item').forEach(el => {
+      const alb = el.getAttribute('data-album');
+      if (alb === currentActiveAlbum) {
+        el.classList.add('active');
+      } else {
+        el.classList.remove('active');
+      }
+    });
   }
 
   function loadTrack(index) {
@@ -2334,6 +2372,28 @@ function updateToneArm() {
     };
   }
 
+  function switchToPlayerView() {
+    if (homeView && !homeView.classList.contains('hidden')) previousView = 'home';
+    else if (libraryView && !libraryView.classList.contains('hidden')) previousView = 'library';
+    else if (exploreView && !exploreView.classList.contains('hidden')) previousView = 'explore';
+    
+    if (homeView) homeView.classList.add('hidden');
+    if (libraryView) libraryView.classList.add('hidden');
+    if (exploreView) exploreView.classList.add('hidden');
+    
+    if (playerView) playerView.classList.remove('hidden');
+    if (navHome) navHome.classList.remove('active');
+    if (navLibrary) navLibrary.classList.remove('active');
+    if (navExplore) navExplore.classList.remove('active');
+    if (bpTogglePlayer) bpTogglePlayer.innerHTML = ICONS.down;
+    
+    updatePlaylistUI();
+    const activeTrackEl = document.querySelector('.track-item.active');
+    if (activeTrackEl) {
+      activeTrackEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
   // Floating Mini Player Handlers
   const bpMiniBtn = document.getElementById('bp-mini-btn');
   const miniPlayerWidget = document.getElementById('mini-player-widget');
@@ -2341,6 +2401,7 @@ function updateToneArm() {
   const miniPrev = document.getElementById('mini-prev');
   const miniPlay = document.getElementById('mini-play');
   const miniNext = document.getElementById('mini-next');
+  const miniBody = document.querySelector('.mini-player-body');
 
   if (bpMiniBtn && miniPlayerWidget) {
     bpMiniBtn.onclick = () => {
@@ -2355,6 +2416,16 @@ function updateToneArm() {
   if (btnExpandMini && miniPlayerWidget) {
     btnExpandMini.onclick = () => {
       miniPlayerWidget.classList.add('hidden');
+      switchToPlayerView();
+      playRetroSFX('click');
+    };
+  }
+
+  if (miniBody && miniPlayerWidget) {
+    miniBody.style.cursor = 'pointer';
+    miniBody.onclick = () => {
+      miniPlayerWidget.classList.add('hidden');
+      switchToPlayerView();
       playRetroSFX('click');
     };
   }
