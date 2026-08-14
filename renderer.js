@@ -70,6 +70,64 @@ try {
     }, 3000);
   }
 
+  // Favorites System (Local Storage Persistence)
+  const FAVORITES_KEY = 'retro_groove_favorites';
+  function getFavorites() {
+    try {
+      const saved = localStorage.getItem(FAVORITES_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function isFavorite(filename) {
+    if (!filename) return false;
+    return getFavorites().includes(filename);
+  }
+
+  function toggleFavorite(track) {
+    if (!track || !track.filename) return false;
+    let favs = getFavorites();
+    let added = false;
+    if (favs.includes(track.filename)) {
+      favs = favs.filter(f => f !== track.filename);
+      added = false;
+    } else {
+      favs.push(track.filename);
+      added = true;
+    }
+    localStorage.setItem(FAVORITES_KEY, JSON.stringify(favs));
+    updateFavoritesUI();
+    
+    // Refresh library if currently in library view
+    const libraryAlbumsGrid = document.getElementById('library-albums-grid');
+    if (libraryAlbumsGrid) {
+      const likedCountEl = libraryAlbumsGrid.querySelector('.liked-songs-card .library-album-artist');
+      if (likedCountEl) {
+        likedCountEl.innerText = `${getFavorites().length} lagu favorit`;
+      }
+    }
+
+    showToast(added ? `"${track.title}" ditambahkan ke Lagu Disukai ❤️` : `"${track.title}" dihapus dari Lagu Disukai`);
+    return added;
+  }
+
+  function updateFavoritesUI() {
+    const bpLike = document.getElementById('bp-like');
+    if (bpLike && playlist[currentIndex]) {
+      const isFav = isFavorite(playlist[currentIndex].filename);
+      bpLike.classList.toggle('icon-active', isFav);
+    }
+    document.querySelectorAll('.library-track-item').forEach(el => {
+      const filename = el.getAttribute('data-filename');
+      const likeBtn = el.querySelector('.track-like');
+      if (likeBtn && filename) {
+        likeBtn.classList.toggle('icon-active', isFavorite(filename));
+      }
+    });
+  }
+
   // Web Audio API for Bass Glow and Visualizer
   let audioCtx;
   let analyser;
@@ -360,9 +418,26 @@ try {
               </div>
               `;
             }
-            // Populate Library Grid
+          });
+
+          // Function to Render Library Grid (including Liked Songs)
+          function renderLibraryGrid() {
             const libraryAlbumsGrid = document.getElementById('library-albums-grid');
-            if (libraryAlbumsGrid) {
+            if (!libraryAlbumsGrid) return;
+
+            const likedTracksCount = masterPlaylist.filter(t => isFavorite(t.filename)).length;
+            libraryAlbumsGrid.innerHTML = `
+              <div class="library-album-card liked-songs-card" data-album="__LIKED_SONGS__">
+                <div class="library-album-art" style="background: linear-gradient(135deg, #ff007f 0%, #7928ca 100%); display: flex; justify-content: center; align-items: center; border-radius: 8px;">
+                  <span style="font-size: 40px; filter: drop-shadow(0 0 10px #ff007f);">❤️</span>
+                </div>
+                <div class="library-album-title" style="color: #ff77c6;">Lagu Disukai</div>
+                <div class="library-album-artist">${likedTracksCount} lagu favorit</div>
+              </div>
+            `;
+
+            Object.keys(albumMap).forEach(albumName => {
+              const tracks = albumMap[albumName];
               const cover = tracks[0].coverBase64 ? `url('${tracks[0].coverBase64}')` : 'none';
               libraryAlbumsGrid.innerHTML += `
               <div class="library-album-card" data-album="${albumName}">
@@ -371,8 +446,148 @@ try {
                 <div class="library-album-artist">${tracks[0].artist}</div>
               </div>
               `;
-            }
-          });
+            });
+
+            // Bind click events on library cards
+            libraryAlbumsGrid.querySelectorAll('.library-album-card').forEach(el => {
+              el.onclick = () => {
+                const selectedAlbum = el.getAttribute('data-album');
+                let tracks = [];
+                let albumTitle = '';
+                let albumArtist = '';
+                let albumMeta = '';
+                let isLikedAlbum = (selectedAlbum === '__LIKED_SONGS__');
+
+                if (isLikedAlbum) {
+                  tracks = masterPlaylist.filter(t => isFavorite(t.filename));
+                  albumTitle = 'Lagu Disukai';
+                  albumArtist = 'Koleksi Favorit Kamu';
+                  albumMeta = `Koleksi Pribadi • ${tracks.length} lagu`;
+                } else {
+                  tracks = albumMap[selectedAlbum] || [];
+                  albumTitle = selectedAlbum;
+                  albumArtist = tracks[0] ? tracks[0].artist : 'Unknown Artist';
+                  albumMeta = `Album • 2026<br>${tracks.length} lagu`;
+                }
+
+                // Show Detail View
+                libraryAlbumsContainer.classList.add('hidden');
+                libraryAlbumDetail.classList.remove('hidden');
+
+                // Populate Detail Header
+                const detailArt = document.getElementById('library-detail-art');
+                if (isLikedAlbum) {
+                  detailArt.style.backgroundImage = 'none';
+                  detailArt.style.background = 'linear-gradient(135deg, #ff007f 0%, #7928ca 100%)';
+                  detailArt.innerHTML = '<div style="width:100%;height:100%;display:flex;justify-content:center;align-items:center;font-size:80px;filter:drop-shadow(0 0 15px #ff007f);">❤️</div>';
+                } else {
+                  detailArt.innerHTML = '';
+                  const cover = tracks[0] && tracks[0].coverBase64 ? `url('${tracks[0].coverBase64}')` : 'none';
+                  detailArt.style.backgroundImage = cover;
+                  detailArt.style.backgroundSize = 'cover';
+                }
+
+                document.getElementById('library-detail-title').innerText = albumTitle;
+                document.getElementById('library-detail-artist-text').innerText = albumArtist;
+                document.getElementById('library-detail-meta').innerHTML = albumMeta;
+
+                // Populate Tracklist
+                const tracklistContainer = document.getElementById('library-tracklist');
+                tracklistContainer.innerHTML = '';
+
+                if (tracks.length === 0) {
+                  tracklistContainer.innerHTML = `
+                    <div style="padding: 50px 20px; text-align: center; color: #888;">
+                      <div style="font-size: 20px; margin-bottom: 8px; color: #fff;">Belum ada lagu yang disukai</div>
+                      <div style="font-size: 14px; color: #666;">Beri tanda suka (👍) pada lagu untuk memasukkannya ke daftar ini!</div>
+                    </div>
+                  `;
+                } else {
+                  tracks.forEach((track, idx) => {
+                    const trackCover = track.coverBase64 ? `url('${track.coverBase64}')` : 'none';
+                    const isFav = isFavorite(track.filename);
+                    tracklistContainer.innerHTML += `
+                    <div class="library-track-item" data-index="${idx}" data-filename="${track.filename}" data-album="${selectedAlbum}">
+                      <div class="library-track-art" style="background-image: ${trackCover}; width: 40px; height: 40px; border-radius: 4px; margin-right: 15px; background-size: cover; background-position: center; background-color: #222;"></div>
+                      <div class="library-track-info" style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center;">
+                        <div class="library-track-title" style="line-height: 1.2;">${track.title}</div>
+                        <div class="library-track-artist" style="font-size: 18px; color: var(--text-dim); line-height: 1.2;">${track.artist} • ${track.album}</div>
+                      </div>
+                      <div class="library-track-duration" style="margin-right: 15px;">-</div>
+                      <div class="library-track-actions" style="display:flex; gap: 10px;">
+                        <span class="track-like ${isFav ? 'icon-active' : ''}" style="font-size: 16px; cursor: pointer; color: #aaa;"><img class="pixel-icon" src="assets/icons/icon_like.bmp"></span>
+                        <span class="track-dislike" style="font-size: 16px; cursor: pointer; color: #aaa;"><img class="pixel-icon" src="assets/icons/icon_dislike.bmp"></span>
+                        <span class="track-more" style="font-size: 16px; cursor: pointer; color: #aaa;"><img class="pixel-icon" src="assets/icons/icon_more.bmp"></span>
+                      </div>
+                    </div>
+                    `;
+                  });
+                }
+
+                // Bind big play button
+                const btnPlay = document.getElementById('library-detail-play');
+                if (btnPlay) {
+                  btnPlay.onclick = () => {
+                    if (tracks.length === 0) {
+                      showToast('Tidak ada lagu untuk diputar!');
+                      return;
+                    }
+                    playlist = [...tracks];
+                    renderPlaylist();
+                    
+                    previousView = 'library';
+                    if (libraryView) libraryView.classList.add('hidden');
+                    if (playerView) playerView.classList.remove('hidden');
+                    if (bpTogglePlayer) bpTogglePlayer.innerHTML = ICONS.down;
+                    
+                    loadTrack(0);
+                    playTrack();
+                  };
+                }
+
+                // Bind track clicks to play
+                tracklistContainer.querySelectorAll('.library-track-item').forEach(trackEl => {
+                  trackEl.onclick = () => {
+                    const trackIdx = parseInt(trackEl.getAttribute('data-index'));
+                    playlist = [...tracks];
+                    renderPlaylist();
+                    
+                    previousView = 'library';
+                    if (libraryView) libraryView.classList.add('hidden');
+                    if (playerView) playerView.classList.remove('hidden');
+                    if (bpTogglePlayer) bpTogglePlayer.innerHTML = ICONS.down;
+                    
+                    loadTrack(trackIdx);
+                    playTrack();
+                  };
+                });
+
+                // Bind track like/dislike buttons
+                tracklistContainer.querySelectorAll('.track-like').forEach((btn, idx) => {
+                  btn.onclick = (e) => {
+                    e.stopPropagation();
+                    const track = tracks[idx];
+                    toggleFavorite(track);
+                  };
+                });
+                tracklistContainer.querySelectorAll('.track-dislike').forEach(btn => {
+                  btn.onclick = (e) => {
+                    e.stopPropagation();
+                    btn.classList.toggle('icon-active');
+                    showToast(btn.classList.contains('icon-active') ? 'Lagu tidak disukai' : 'Batal tidak disukai');
+                  };
+                });
+                tracklistContainer.querySelectorAll('.track-more').forEach(btn => {
+                  btn.onclick = (e) => {
+                    e.stopPropagation();
+                    showToast('Opsi lagu...');
+                  };
+                });
+              };
+            });
+          }
+
+          renderLibraryGrid();
           
           // Populate Explore View Sections
           const exploreNewReleases = document.getElementById('explore-new-releases');
@@ -380,7 +595,6 @@ try {
           
           if (exploreNewReleases && exploreTrending) {
              const allAlbums = Object.keys(albumMap);
-             // Pick random albums for new releases and trending to simulate explore page
              const shuffledNew = [...allAlbums].sort(() => Math.random() - 0.5);
              const shuffledTrend = [...allAlbums].sort(() => Math.random() - 0.5);
              
@@ -409,123 +623,11 @@ try {
              });
           }
           
-          // Bind clicks for Library Grid
-          const libraryAlbumsGrid = document.getElementById('library-albums-grid');
-          if (libraryAlbumsGrid) {
-            document.querySelectorAll('.library-album-card').forEach(el => {
-              el.onclick = () => {
-                const selectedAlbum = el.getAttribute('data-album');
-                const tracks = albumMap[selectedAlbum];
-                
-                // Show Detail View
-                libraryAlbumsContainer.classList.add('hidden');
-                libraryAlbumDetail.classList.remove('hidden');
-                
-                // Populate Detail Header
-                const cover = tracks[0].coverBase64 ? `url('${tracks[0].coverBase64}')` : 'none';
-                document.getElementById('library-detail-art').style.backgroundImage = cover;
-                document.getElementById('library-detail-title').innerText = selectedAlbum;
-                document.getElementById('library-detail-artist-text').innerText = tracks[0].artist;
-                document.getElementById('library-detail-meta').innerHTML = `Album • 2026<br>${tracks.length} lagu`;
-                
-                // Populate Tracklist
-                const tracklistContainer = document.getElementById('library-tracklist');
-                tracklistContainer.innerHTML = '';
-                tracks.forEach((track, idx) => {
-                  const trackCover = track.coverBase64 ? `url('${track.coverBase64}')` : 'none';
-                  tracklistContainer.innerHTML += `
-                  <div class="library-track-item" data-index="${idx}" data-album="${selectedAlbum}">
-                    <div class="library-track-art" style="background-image: ${trackCover}; width: 40px; height: 40px; border-radius: 4px; margin-right: 15px; background-size: cover; background-position: center; background-color: #222;"></div>
-                    <div class="library-track-info" style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center;">
-                      <div class="library-track-title" style="line-height: 1.2;">${track.title}</div>
-                      <div class="library-track-artist" style="font-size: 18px; color: var(--text-dim); line-height: 1.2;">${track.artist} • ${selectedAlbum}</div>
-                    </div>
-                    <div class="library-track-duration" style="margin-right: 15px;">-</div>
-                    <div class="library-track-actions" style="display:flex; gap: 10px;">
-                      <span class="track-like" style="font-size: 16px; cursor: pointer; color: #aaa;"><img class="pixel-icon" src="assets/icons/icon_like.bmp"></span>
-                      <span class="track-dislike" style="font-size: 16px; cursor: pointer; color: #aaa;"><img class="pixel-icon" src="assets/icons/icon_dislike.bmp"></span>
-                      <span class="track-more" style="font-size: 16px; cursor: pointer; color: #aaa;"><img class="pixel-icon" src="assets/icons/icon_more.bmp"></span>
-                    </div>
-                  </div>
-                  `;
-                });
-                
-                // Bind big play button
-                const btnPlay = document.getElementById('library-detail-play');
-                if (btnPlay) {
-                  btnPlay.onclick = () => {
-                    playlist = albumMap[selectedAlbum];
-                    renderPlaylist();
-                    
-                    previousView = 'library';
-                    if (libraryView) libraryView.classList.add('hidden');
-                    if (playerView) playerView.classList.remove('hidden');
-                    if (bpTogglePlayer) bpTogglePlayer.innerHTML = ICONS.down;
-                    
-                    loadTrack(0);
-                    playTrack();
-                  };
-                }
-
-                // Bind album detail action buttons
-                const btnAlbumDownload = document.getElementById('btn-album-download');
-                if (btnAlbumDownload) btnAlbumDownload.onclick = () => showToast('Mengunduh album...');
-                const btnAlbumEdit = document.getElementById('btn-album-edit');
-                if (btnAlbumEdit) btnAlbumEdit.onclick = () => showToast('Fitur edit album belum tersedia.');
-                const btnAlbumShare = document.getElementById('btn-album-share');
-                if (btnAlbumShare) btnAlbumShare.onclick = () => showToast('Tautan album berhasil disalin!');
-                const btnAlbumMore = document.getElementById('btn-album-more');
-                if (btnAlbumMore) btnAlbumMore.onclick = () => showToast('Menampilkan opsi album...');
-                
-                // Bind track clicks to play
-                document.querySelectorAll('.library-track-item').forEach(trackEl => {
-                  trackEl.onclick = () => {
-                    const albumName = trackEl.getAttribute('data-album');
-                    const trackIdx = parseInt(trackEl.getAttribute('data-index'));
-                    
-                    playlist = albumMap[albumName];
-                    renderPlaylist();
-                    
-                    // Switch to Player View
-                    previousView = 'library';
-                    if (libraryView) libraryView.classList.add('hidden');
-                    if (playerView) playerView.classList.remove('hidden');
-                    if (bpTogglePlayer) bpTogglePlayer.innerHTML = ICONS.down;
-                    
-                    loadTrack(trackIdx);
-                    playTrack();
-                  };
-                });
-
-                // Bind track action buttons
-                document.querySelectorAll('.track-like').forEach(btn => {
-                  btn.onclick = (e) => {
-                    e.stopPropagation(); // prevent playing track
-                    btn.classList.toggle('icon-active');
-                    showToast(btn.classList.contains('icon-active') ? 'Dimasukkan ke daftar Suka' : 'Dihapus dari daftar Suka');
-                  };
-                });
-                document.querySelectorAll('.track-dislike').forEach(btn => {
-                  btn.onclick = (e) => {
-                    e.stopPropagation();
-                    btn.classList.toggle('icon-active');
-                    showToast(btn.classList.contains('icon-active') ? 'Lagu tidak disukai' : 'Batal tidak disukai');
-                  };
-                });
-                document.querySelectorAll('.track-more').forEach(btn => {
-                  btn.onclick = (e) => {
-                    e.stopPropagation();
-                    showToast('Opsi lagu...');
-                  };
-                });
-              };
-            });
-          }
-          
           if (btnBackLibrary) {
             btnBackLibrary.onclick = () => {
               libraryAlbumDetail.classList.add('hidden');
               libraryAlbumsContainer.classList.remove('hidden');
+              renderLibraryGrid(); // Refresh counts
             };
           }
           
@@ -558,37 +660,144 @@ try {
           
           // Bind Explore Genre Cards
           document.querySelectorAll('.genre-card').forEach(card => {
-            card.onclick = () => showToast(`Menampilkan genre: ${card.innerText}`);
+            card.onclick = () => {
+              const genreName = card.innerText.trim();
+              const matched = masterPlaylist.filter(t => (t.genre && t.genre.toLowerCase().includes(genreName.toLowerCase())) || (t.title && t.title.toLowerCase().includes(genreName.toLowerCase())));
+              if (matched.length > 0) {
+                playlist = matched;
+                renderPlaylist();
+                loadTrack(0);
+                playTrack();
+                showToast(`Memutar genre ${genreName} (${matched.length} lagu)`);
+              } else {
+                showToast(`Menampilkan genre: ${genreName}`);
+              }
+            };
           });
           
-          // Bind Search Bar
-          const searchInput = document.querySelector('.search-bar input');
-          if (searchInput) {
-            searchInput.oninput = (e) => {
-              const query = e.target.value.toLowerCase();
+          // Live Instant Search Implementation
+          function setupLiveSearch(inputId, resultsId) {
+            const input = document.getElementById(inputId);
+            const resultsContainer = document.getElementById(resultsId);
+            if (!input || !resultsContainer) return;
+
+            let debounceTimer;
+            input.addEventListener('input', (e) => {
+              clearTimeout(debounceTimer);
+              const query = e.target.value.trim().toLowerCase();
+
+              // Also filter visible cards in carousels
               document.querySelectorAll('.album-card').forEach(card => {
                 const title = card.querySelector('.album-card-title').innerText.toLowerCase();
                 const artist = card.querySelector('.album-card-artist').innerText.toLowerCase();
-                if (title.includes(query) || artist.includes(query)) {
+                if (!query || title.includes(query) || artist.includes(query)) {
                   card.style.display = 'block';
                 } else {
                   card.style.display = 'none';
                 }
               });
-            };
+
+              if (!query) {
+                resultsContainer.classList.add('hidden');
+                resultsContainer.innerHTML = '';
+                return;
+              }
+
+              debounceTimer = setTimeout(() => {
+                const matchedTracks = masterPlaylist.filter(t => 
+                  (t.title && t.title.toLowerCase().includes(query)) ||
+                  (t.artist && t.artist.toLowerCase().includes(query)) ||
+                  (t.album && t.album.toLowerCase().includes(query)) ||
+                  (t.genre && t.genre.toLowerCase().includes(query))
+                );
+
+                if (matchedTracks.length === 0) {
+                  resultsContainer.innerHTML = `<div class="search-no-result">Tidak ada lagu yang cocok dengan "${e.target.value}"</div>`;
+                } else {
+                  resultsContainer.innerHTML = `<div class="search-result-header">Hasil Pencarian (${matchedTracks.length})</div>`;
+                  matchedTracks.slice(0, 10).forEach(track => {
+                    const cover = track.coverBase64 ? `url('${track.coverBase64}')` : 'none';
+                    const item = document.createElement('div');
+                    item.className = 'search-result-item';
+                    item.innerHTML = `
+                      <div class="search-result-art" style="background-image: ${cover};"></div>
+                      <div class="search-result-info">
+                        <div class="search-result-title">${track.title}</div>
+                        <div class="search-result-artist">${track.artist} • ${track.album}</div>
+                      </div>
+                    `;
+                    item.onclick = () => {
+                      const trackIdx = masterPlaylist.findIndex(t => t.filename === track.filename);
+                      playlist = [...masterPlaylist];
+                      renderPlaylist();
+                      loadTrack(trackIdx >= 0 ? trackIdx : 0);
+                      playTrack();
+                      resultsContainer.classList.add('hidden');
+                      input.value = '';
+                      showToast(`Memutar: ${track.title}`);
+                    };
+                    resultsContainer.appendChild(item);
+                  });
+                }
+                resultsContainer.classList.remove('hidden');
+              }, 120);
+            });
+
+            // Close results when clicking outside
+            document.addEventListener('click', (e) => {
+              if (!input.contains(e.target) && !resultsContainer.contains(e.target)) {
+                resultsContainer.classList.add('hidden');
+              }
+            });
           }
+
+          setupLiveSearch('home-search-input', 'home-search-results');
+          setupLiveSearch('explore-search-input', 'explore-search-results');
           
-          // Bind Mood Chips
+          // Bind Real Mood Chips Filtering
+          const moodKeywords = {
+            'sedih': ['sad', 'ballad', 'slow', 'acoustic', 'mellow', 'cry', 'rain', 'lonely', 'miss', 'hurt', 'heart', 'dark'],
+            'tidur': ['sleep', 'ambient', 'chill', 'lofi', 'lullaby', 'calm', 'night', 'dream', 'soft', 'peace', 'quiet'],
+            'bersantai': ['relax', 'chill', 'easy', 'jazz', 'pop', 'groove', 'summer', 'sunset', 'breeze', 'coffee', 'lo-fi'],
+            'senang': ['happy', 'dance', 'disco', 'fun', 'upbeat', 'party', 'joy', 'sun', 'bright', 'smile', 'energy', 'vibe'],
+            'olahraga': ['workout', 'rock', 'metal', 'electronic', 'edm', 'energy', 'beat', 'fast', 'run', 'gym', 'heavy', 'power'],
+            'fokus': ['focus', 'study', 'instrumental', 'classical', 'synthwave', 'piano', 'code', 'work', 'deep', 'flow']
+          };
+
           document.querySelectorAll('.mood-chip').forEach(chip => {
             chip.onclick = () => {
-              // Toggle active class
               document.querySelectorAll('.mood-chip').forEach(c => c.classList.remove('active'));
               chip.classList.add('active');
-              showToast(`Memutar mix untuk mood: ${chip.innerText}`);
-              
-              // Simulate filtering by shuffling visible albums
-              const cards = Array.from(document.querySelectorAll('.album-card'));
-              cards.forEach(card => card.style.order = Math.floor(Math.random() * 100));
+              const mood = chip.getAttribute('data-mood') || chip.innerText.toLowerCase();
+
+              if (mood === 'all') {
+                playlist = [...masterPlaylist];
+                document.querySelectorAll('.album-card').forEach(card => card.style.display = 'block');
+                renderPlaylist();
+                showToast('Menampilkan semua koleksi lagu');
+                return;
+              }
+
+              const keywords = moodKeywords[mood] || [mood];
+              const matched = masterPlaylist.filter(track => {
+                const text = `${track.title} ${track.artist} ${track.album} ${track.genre}`.toLowerCase();
+                return keywords.some(kw => text.includes(kw));
+              });
+
+              if (matched.length > 0) {
+                playlist = matched;
+                renderPlaylist();
+                loadTrack(0);
+                playTrack();
+                showToast(`Memutar mix mood "${chip.innerText}" (${matched.length} lagu) 🎵`);
+              } else {
+                // Curate subset
+                playlist = [...masterPlaylist].sort(() => Math.random() - 0.5);
+                renderPlaylist();
+                loadTrack(0);
+                playTrack();
+                showToast(`Memutar mix mood "${chip.innerText}"`);
+              }
             };
           });
           
@@ -699,6 +908,7 @@ try {
     }, 200);
 
     updatePlaylistUI();
+    updateFavoritesUI();
   }
 
   let vinylRotation = 0;
@@ -1224,8 +1434,11 @@ function updateToneArm() {
 
   const bpLike = document.getElementById('bp-like');
   if (bpLike) bpLike.onclick = () => {
-    bpLike.classList.toggle('icon-active');
-    showToast(bpLike.classList.contains('icon-active') ? 'Lagu disukai' : 'Lagu batal disukai');
+    if (playlist && playlist[currentIndex]) {
+      toggleFavorite(playlist[currentIndex]);
+    } else {
+      showToast('Pilih lagu terlebih dahulu');
+    }
   };
   
   const bpDislike = document.getElementById('bp-dislike');

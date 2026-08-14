@@ -958,14 +958,110 @@ input[type=range].pixel-slider-master::-webkit-slider-runnable-track {
 
 /* Mood Chip Active State */
 .mood-chip.active {
-  background: var(--highlight);
+  background: #ff0055;
   color: #fff;
-  border-color: var(--highlight);
+  border-color: #ff0055;
+  box-shadow: 0 0 10px rgba(255, 0, 85, 0.5);
 }
 
 /* Icon Active State (Likes) */
-.icon-active {
-  color: var(--highlight) !important;
+.icon-active, .bp-btn.icon-active img, .track-like.icon-active img {
+  filter: drop-shadow(0 0 6px #ff0055) drop-shadow(0 0 12px #ff0055) !important;
+}
+
+/* Live Search Results Dropdown */
+.live-search-results {
+  position: absolute;
+  top: 48px;
+  left: 0;
+  width: 450px;
+  max-height: 380px;
+  overflow-y: auto;
+  background: rgba(18, 20, 26, 0.95);
+  border: 2px solid #3a3f50;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 15px rgba(0, 255, 204, 0.15);
+  backdrop-filter: blur(10px);
+  z-index: 999;
+  padding: 8px;
+}
+
+.live-search-results.hidden {
+  display: none !important;
+}
+
+.search-result-header {
+  font-size: 13px;
+  color: #888;
+  padding: 6px 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 1px solid #2a2d38;
+  margin-bottom: 6px;
+}
+
+.search-result-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.search-result-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.search-result-art {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  background-color: #222;
+  background-size: cover;
+  background-position: center;
+  flex-shrink: 0;
+}
+
+.search-result-info {
+  flex-grow: 1;
+  overflow: hidden;
+}
+
+.search-result-title {
+  font-size: 15px;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-result-artist {
+  font-size: 12px;
+  color: #888;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-no-result {
+  padding: 20px;
+  text-align: center;
+  color: #777;
+  font-size: 14px;
+}
+
+/* Liked Songs Special Card in Library */
+.liked-songs-card {
+  background: linear-gradient(135deg, #4b1248 0%, #1e113a 100%) !important;
+  border: 1px solid #ff007f !important;
+  box-shadow: 0 4px 20px rgba(255, 0, 127, 0.3) !important;
+}
+
+.liked-songs-card:hover {
+  box-shadow: 0 8px 30px rgba(255, 0, 127, 0.5) !important;
+  transform: translateY(-4px);
 }
 
 /* Explore Genre Cards */

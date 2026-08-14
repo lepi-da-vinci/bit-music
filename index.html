@@ -41,19 +41,21 @@
       
       <!-- HOME VIEW -->
       <div id="home-view" class="view-container active">
-        <div class="top-bar">
+        <div class="top-bar" style="position: relative;">
           <div class="search-bar">
             <span class="search-icon"><img class="pixel-icon" src="assets/icons/icon_search.bmp"></span>
-            <input type="text" placeholder="Telusuri lagu, album, artis...">
+            <input type="text" id="home-search-input" placeholder="Telusuri lagu, album, artis...">
           </div>
+          <div id="home-search-results" class="live-search-results hidden"></div>
         </div>
         <div class="mood-chips">
-          <button class="mood-chip">Sedih</button>
-          <button class="mood-chip">Tidur</button>
-          <button class="mood-chip">Bersantai</button>
-          <button class="mood-chip">Senang</button>
-          <button class="mood-chip">Olahraga</button>
-          <button class="mood-chip">Fokus</button>
+          <button class="mood-chip active" data-mood="all">Semua</button>
+          <button class="mood-chip" data-mood="sedih">Sedih</button>
+          <button class="mood-chip" data-mood="tidur">Tidur</button>
+          <button class="mood-chip" data-mood="bersantai">Bersantai</button>
+          <button class="mood-chip" data-mood="senang">Senang</button>
+          <button class="mood-chip" data-mood="olahraga">Olahraga</button>
+          <button class="mood-chip" data-mood="fokus">Fokus</button>
         </div>
         
         <div class="carousel-section">
@@ -71,11 +73,12 @@
       </div>
       <!-- EXPLORE VIEW -->
       <div id="explore-view" class="view-container hidden" style="padding: 30px; overflow-y: auto;">
-        <div class="top-bar">
+        <div class="top-bar" style="position: relative;">
           <div class="search-bar">
             <span class="search-icon"><img class="pixel-icon" src="assets/icons/icon_search.bmp"></span>
-            <input type="text" placeholder="Telusuri genre, artis, atau album...">
+            <input type="text" id="explore-search-input" placeholder="Telusuri genre, artis, atau album...">
           </div>
+          <div id="explore-search-results" class="live-search-results hidden"></div>
         </div>
         
         <div class="carousel-section">
