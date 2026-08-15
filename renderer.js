@@ -1925,20 +1925,22 @@ try {
       
       analyser.getByteFrequencyData(dataArray);
 
-      // 1. Draw LCD Turntable Spectrum Analyzer
+      // 1. Draw LCD Turntable Spectrum Analyzer (Subtle Retro Background Spectrum)
       if (canvas && ctx) {
         if (canvas.width !== canvas.offsetWidth) canvas.width = canvas.offsetWidth;
         if (canvas.height !== canvas.offsetHeight) canvas.height = canvas.offsetHeight;
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        const barWidth = (canvas.width / 15) - 2;
-        let x = 0;
+        const numBars = 16;
+        const barWidth = Math.floor((canvas.width - 4) / numBars) - 2;
+        let x = 2;
         
-        for (let i = 0; i < 15; i++) {
+        for (let i = 0; i < numBars; i++) {
           const dataIndex = i * 2 + 2; 
-          const barHeight = (dataArray[dataIndex] / 255) * canvas.height;
+          const barHeightRatio = (dataArray[dataIndex] || 0) / 255;
+          const barHeight = Math.max(3, barHeightRatio * (canvas.height * 0.7));
           
-          ctx.fillStyle = `rgba(100, 255, 120, ${0.4 + (barHeight/canvas.height)*0.6})`;
+          ctx.fillStyle = `rgba(57, 255, 20, ${0.15 + barHeightRatio * 0.35})`;
           ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
           x += barWidth + 2;
         }
