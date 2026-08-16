@@ -3885,11 +3885,13 @@ function updateToneArm() {
   if (navHome) {
     navHome.onclick = (e) => {
       e.preventDefault();
+      previousView = 'home';
       playRetroSFX('tab');
       if (playerView) playerView.classList.add('hidden');
       if (libraryView) libraryView.classList.add('hidden');
       if (exploreView) exploreView.classList.add('hidden');
       if (homeView) homeView.classList.remove('hidden');
+      if (bpTogglePlayer) bpTogglePlayer.innerHTML = ICONS.up;
       
       navHome.classList.add('active');
       if (navLibrary) navLibrary.classList.remove('active');
@@ -3899,11 +3901,13 @@ function updateToneArm() {
   if (navLibrary) {
     navLibrary.onclick = (e) => {
       e.preventDefault();
+      previousView = 'library';
       playRetroSFX('tab');
       if (playerView) playerView.classList.add('hidden');
       if (homeView) homeView.classList.add('hidden');
       if (exploreView) exploreView.classList.add('hidden');
       if (libraryView) libraryView.classList.remove('hidden');
+      if (bpTogglePlayer) bpTogglePlayer.innerHTML = ICONS.up;
       
       navLibrary.classList.add('active');
       if (navHome) navHome.classList.remove('active');
@@ -3914,11 +3918,13 @@ function updateToneArm() {
   if (navExplore) {
     navExplore.onclick = (e) => {
       e.preventDefault();
+      previousView = 'explore';
       playRetroSFX('tab');
       if (playerView) playerView.classList.add('hidden');
       if (homeView) homeView.classList.add('hidden');
       if (libraryView) libraryView.classList.add('hidden');
       if (exploreView) exploreView.classList.remove('hidden');
+      if (bpTogglePlayer) bpTogglePlayer.innerHTML = ICONS.up;
       
       navExplore.classList.add('active');
       if (navHome) navHome.classList.remove('active');
@@ -4080,6 +4086,37 @@ function updateToneArm() {
     };
   }
 
+  function minimizeToPreviousView() {
+    // 1. Hide Player View
+    if (playerView) playerView.classList.add('hidden');
+
+    // 2. Restore the previous view (or home if undefined)
+    const activeViewName = previousView || 'home';
+    if (homeView) homeView.classList.toggle('hidden', activeViewName !== 'home');
+    if (libraryView) libraryView.classList.toggle('hidden', activeViewName !== 'library');
+    const exploreView = document.getElementById('explore-view');
+    if (exploreView) exploreView.classList.toggle('hidden', activeViewName !== 'explore');
+
+    // 3. Highlight the correct sidebar navigation tab
+    if (navHome) navHome.classList.toggle('active', activeViewName === 'home');
+    if (navLibrary) navLibrary.classList.toggle('active', activeViewName === 'library');
+    if (navExplore) navExplore.classList.toggle('active', activeViewName === 'explore');
+
+    // 4. Update the bottom-bar toggle button arrow icon to "UP" (since player is minimized)
+    if (bpTogglePlayer) bpTogglePlayer.innerHTML = ICONS.up;
+
+    // 5. Open & Update the Floating Mini Player Widget
+    if (miniPlayerWidget) {
+      miniPlayerWidget.classList.remove('hidden');
+      updateMiniPlayerUI();
+    }
+    if (bpMiniBtn) bpMiniBtn.classList.add('active');
+    if (ledBpMini) ledBpMini.classList.add('active');
+
+    playRetroSFX('tab');
+    showToast(`🗕 Diminimalkan ke ${activeViewName === 'home' ? 'Beranda' : activeViewName === 'explore' ? 'Eksplorasi' : 'Koleksi'}`);
+  }
+
   function switchToPlayerView() {
     if (homeView && !homeView.classList.contains('hidden')) previousView = 'home';
     else if (libraryView && !libraryView.classList.contains('hidden')) previousView = 'library';
@@ -4094,6 +4131,11 @@ function updateToneArm() {
     if (navLibrary) navLibrary.classList.remove('active');
     if (navExplore) navExplore.classList.remove('active');
     if (bpTogglePlayer) bpTogglePlayer.innerHTML = ICONS.down;
+    
+    // Hide mini player when inside full player view
+    if (miniPlayerWidget) miniPlayerWidget.classList.add('hidden');
+    if (bpMiniBtn) bpMiniBtn.classList.remove('active');
+    if (ledBpMini) ledBpMini.classList.remove('active');
     
     updatePlaylistUI();
     const activeTrackEl = document.querySelector('.track-item.active');
@@ -4114,36 +4156,39 @@ function updateToneArm() {
 
   if (bpMiniBtn && miniPlayerWidget) {
     bpMiniBtn.onclick = () => {
-      const isOpening = miniPlayerWidget.classList.contains('hidden');
-      miniPlayerWidget.classList.toggle('hidden');
-      bpMiniBtn.classList.toggle('active', isOpening);
-      if (ledBpMini) ledBpMini.classList.toggle('active', isOpening);
-      playRetroSFX('tab');
-      if (isOpening) {
-        updateMiniPlayerUI();
+      // If we are currently inside the Full Turntable View, minimize it and return to previous page
+      if (playerView && !playerView.classList.contains('hidden')) {
+        minimizeToPreviousView();
+      } else {
+        // If we are already on Home/Explore/Library, toggle the floating mini player widget
+        const isOpening = miniPlayerWidget.classList.contains('hidden');
+        miniPlayerWidget.classList.toggle('hidden');
+        bpMiniBtn.classList.toggle('active', isOpening);
+        if (ledBpMini) ledBpMini.classList.toggle('active', isOpening);
+        playRetroSFX('tab');
+        if (isOpening) {
+          updateMiniPlayerUI();
+        }
       }
     };
   }
 
+  function restoreFromMiniPlayer() {
+    if (miniPlayerWidget) miniPlayerWidget.classList.add('hidden');
+    if (bpMiniBtn) bpMiniBtn.classList.remove('active');
+    if (ledBpMini) ledBpMini.classList.remove('active');
+    switchToPlayerView();
+    playRetroSFX('click');
+    showToast('🗖 Pemutar Vinyl Ditampilkan');
+  }
+
   if (btnExpandMini && miniPlayerWidget) {
-    btnExpandMini.onclick = () => {
-      miniPlayerWidget.classList.add('hidden');
-      if (bpMiniBtn) bpMiniBtn.classList.remove('active');
-      if (ledBpMini) ledBpMini.classList.remove('active');
-      switchToPlayerView();
-      playRetroSFX('click');
-    };
+    btnExpandMini.onclick = restoreFromMiniPlayer;
   }
 
   if (miniBody && miniPlayerWidget) {
     miniBody.style.cursor = 'pointer';
-    miniBody.onclick = () => {
-      miniPlayerWidget.classList.add('hidden');
-      if (bpMiniBtn) bpMiniBtn.classList.remove('active');
-      if (ledBpMini) ledBpMini.classList.remove('active');
-      switchToPlayerView();
-      playRetroSFX('click');
-    };
+    miniBody.onclick = restoreFromMiniPlayer;
   }
 
   if (miniPrev) {
