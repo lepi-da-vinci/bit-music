@@ -3427,9 +3427,10 @@ function updateToneArm() {
   function setShuffleState(active, notify = true) {
     isShuffled = !!active;
 
-    // 1. Turntable player button & icon
+    // 1. Turntable player button & icon & Pixel LED
     const btnShuffle = document.getElementById('btn-shuffle');
     const iconShuffle = document.getElementById('icon-shuffle');
+    const ledTtShuffle = document.getElementById('led-tt-shuffle');
     if (btnShuffle) {
       btnShuffle.classList.toggle('active', isShuffled);
       btnShuffle.title = isShuffled ? 'Putar Acak: AKTIF' : 'Putar Acak: NONAKTIF';
@@ -3437,13 +3438,19 @@ function updateToneArm() {
     if (iconShuffle) {
       iconShuffle.style.opacity = isShuffled ? '1' : '0.4';
     }
+    if (ledTtShuffle) {
+      ledTtShuffle.classList.toggle('active', isShuffled);
+    }
 
-    // 2. Bottom player shuffle button
+    // 2. Bottom player shuffle button & Micro LED
     const bpShuffle = document.getElementById('bp-shuffle');
+    const ledBpShuffle = document.getElementById('led-bp-shuffle');
     if (bpShuffle) {
       bpShuffle.classList.toggle('active', isShuffled);
-      bpShuffle.classList.toggle('icon-active', isShuffled);
       bpShuffle.title = isShuffled ? 'Putar Acak: AKTIF' : 'Putar Acak: NONAKTIF';
+    }
+    if (ledBpShuffle) {
+      ledBpShuffle.classList.toggle('active', isShuffled);
     }
 
     // 3. Album detail shuffle button
@@ -3462,9 +3469,10 @@ function updateToneArm() {
   function setRepeatState(active, notify = true) {
     isRepeat = !!active;
 
-    // 1. Turntable player repeat button & icon
+    // 1. Turntable player repeat button & icon & Pixel LED
     const btnRepeat = document.getElementById('btn-repeat');
     const iconRepeat = document.getElementById('icon-repeat');
+    const ledTtRepeat = document.getElementById('led-tt-repeat');
     if (btnRepeat) {
       btnRepeat.classList.toggle('active', isRepeat);
       btnRepeat.title = isRepeat ? 'Ulangi Lagu: AKTIF' : 'Ulangi Lagu: NONAKTIF';
@@ -3472,13 +3480,19 @@ function updateToneArm() {
     if (iconRepeat) {
       iconRepeat.style.opacity = isRepeat ? '1' : '0.4';
     }
+    if (ledTtRepeat) {
+      ledTtRepeat.classList.toggle('active', isRepeat);
+    }
 
-    // 2. Bottom player repeat button
+    // 2. Bottom player repeat button & Micro LED
     const bpRepeat = document.getElementById('bp-repeat');
+    const ledBpRepeat = document.getElementById('led-bp-repeat');
     if (bpRepeat) {
       bpRepeat.classList.toggle('active', isRepeat);
-      bpRepeat.classList.toggle('icon-active', isRepeat);
       bpRepeat.title = isRepeat ? 'Ulangi Lagu: AKTIF' : 'Ulangi Lagu: NONAKTIF';
+    }
+    if (ledBpRepeat) {
+      ledBpRepeat.classList.toggle('active', isRepeat);
     }
 
     if (notify) {
@@ -3560,34 +3574,50 @@ function updateToneArm() {
     }
   });
 
-  // UI Controls
+  // UI Controls & Speed RPM Selectors
   let baseSpeed = 1.0;
   let pitchMultiplier = 1.0;
   
-  const btn33 = document.getElementById('btn-speed-33');
-  const btn45 = document.getElementById('btn-speed-45');
-  
-  btn33.onclick = () => {
-    baseSpeed = 1.0;
-    targetPlaybackRate = baseSpeed * pitchMultiplier;
-    btn33.style.color = 'var(--gold)';
-    btn45.style.color = '#8c91a0';
-  };
-  
-  btn45.onclick = () => {
-    baseSpeed = 1.36; // 45/33 ratio
-    targetPlaybackRate = baseSpeed * pitchMultiplier;
-    btn45.style.color = 'var(--gold)';
-    btn33.style.color = '#8c91a0';
-  };
+  function setSpeedRPM(speed, notify = true) {
+    const btn33 = document.getElementById('btn-speed-33-btn');
+    const lbl33 = document.getElementById('btn-speed-33');
+    const btn45 = document.getElementById('btn-speed-45-btn');
+    const lbl45 = document.getElementById('btn-speed-45');
+
+    if (speed === 33) {
+      baseSpeed = 1.0;
+      targetPlaybackRate = baseSpeed * pitchMultiplier;
+      if (btn33) btn33.classList.add('active');
+      if (lbl33) lbl33.classList.add('active');
+      if (btn45) btn45.classList.remove('active');
+      if (lbl45) lbl45.classList.remove('active');
+      if (notify) showToast('Kecepatan Vinyl: 33⅓ RPM (Standar) 💽');
+    } else {
+      baseSpeed = 1.36; // 45 / 33 RPM ratio
+      targetPlaybackRate = baseSpeed * pitchMultiplier;
+      if (btn45) btn45.classList.add('active');
+      if (lbl45) lbl45.classList.add('active');
+      if (btn33) btn33.classList.remove('active');
+      if (lbl33) lbl33.classList.remove('active');
+      if (notify) showToast('Kecepatan Vinyl: 45 RPM (Cepat) ⚡');
+    }
+    playRetroSFX('click');
+  }
+
+  const unit33 = document.getElementById('unit-speed-33');
+  if (unit33) unit33.onclick = () => setSpeedRPM(33);
+
+  const unit45 = document.getElementById('unit-speed-45');
+  if (unit45) unit45.onclick = () => setSpeedRPM(45);
 
   // Pitch Fader
   const pitchSlider = document.getElementById('pitch-slider');
-
-  pitchSlider.oninput = (e) => {
-    pitchMultiplier = parseFloat(e.target.value);
-    targetPlaybackRate = baseSpeed * pitchMultiplier;
-  };
+  if (pitchSlider) {
+    pitchSlider.oninput = (e) => {
+      pitchMultiplier = parseFloat(e.target.value);
+      targetPlaybackRate = baseSpeed * pitchMultiplier;
+    };
+  }
   
   document.getElementById('btn-play').onclick = togglePlay;
 
@@ -3897,20 +3927,17 @@ function updateToneArm() {
   }
 
   const bpSfxToggle = document.getElementById('bp-sfx-toggle');
+  const ledBpSfx = document.getElementById('led-bp-sfx');
   if (bpSfxToggle) {
     bpSfxToggle.onclick = () => {
       isSfxEnabled = !isSfxEnabled;
+      bpSfxToggle.classList.toggle('active', isSfxEnabled);
+      if (ledBpSfx) ledBpSfx.classList.toggle('active', isSfxEnabled);
       if (isSfxEnabled) {
-        bpSfxToggle.style.color = '#00ffcc';
-        bpSfxToggle.style.borderColor = '#00ffcc';
-        bpSfxToggle.style.background = 'rgba(0,255,204,0.1)';
         bpSfxToggle.title = 'Suara Retro SFX: Aktif';
         playRetroSFX('click');
         showToast('Efek Suara Retro: Aktif 🔊');
       } else {
-        bpSfxToggle.style.color = '#666';
-        bpSfxToggle.style.borderColor = '#444';
-        bpSfxToggle.style.background = 'transparent';
         bpSfxToggle.title = 'Suara Retro SFX: Mati';
         showToast('Efek Suara Retro: Mati 🔇');
       }
@@ -3940,9 +3967,11 @@ function updateToneArm() {
 
   if (bpQueueBtn && queueDrawer) {
     bpQueueBtn.onclick = () => {
+      const isOpening = queueDrawer.classList.contains('hidden');
       queueDrawer.classList.toggle('hidden');
+      bpQueueBtn.classList.toggle('active', isOpening);
       playRetroSFX('tab');
-      if (!queueDrawer.classList.contains('hidden')) {
+      if (isOpening) {
         updateQueueDrawer();
       }
     };
@@ -3951,6 +3980,7 @@ function updateToneArm() {
   if (btnCloseQueue && queueDrawer) {
     btnCloseQueue.onclick = () => {
       queueDrawer.classList.add('hidden');
+      if (bpQueueBtn) bpQueueBtn.classList.remove('active');
       playRetroSFX('click');
     };
   }
@@ -4024,14 +4054,18 @@ function updateToneArm() {
 
   // Lyrics Drawer Toggle Handlers
   const bpLyricsBtn = document.getElementById('bp-lyrics-btn');
+  const ledBpLrc = document.getElementById('led-bp-lrc');
   const lyricsDrawer = document.getElementById('lyrics-drawer');
   const btnCloseLyrics = document.getElementById('btn-close-lyrics');
 
   if (bpLyricsBtn && lyricsDrawer) {
     bpLyricsBtn.onclick = () => {
+      const isOpening = lyricsDrawer.classList.contains('hidden');
       lyricsDrawer.classList.toggle('hidden');
+      bpLyricsBtn.classList.toggle('active', isOpening);
+      if (ledBpLrc) ledBpLrc.classList.toggle('active', isOpening);
       playRetroSFX('tab');
-      if (!lyricsDrawer.classList.contains('hidden')) {
+      if (isOpening) {
         updateLyricsDrawer();
       }
     };
@@ -4040,6 +4074,8 @@ function updateToneArm() {
   if (btnCloseLyrics && lyricsDrawer) {
     btnCloseLyrics.onclick = () => {
       lyricsDrawer.classList.add('hidden');
+      if (bpLyricsBtn) bpLyricsBtn.classList.remove('active');
+      if (ledBpLrc) ledBpLrc.classList.remove('active');
       playRetroSFX('click');
     };
   }
@@ -4068,6 +4104,7 @@ function updateToneArm() {
 
   // Floating Mini Player Handlers
   const bpMiniBtn = document.getElementById('bp-mini-btn');
+  const ledBpMini = document.getElementById('led-bp-mini');
   const miniPlayerWidget = document.getElementById('mini-player-widget');
   const btnExpandMini = document.getElementById('btn-expand-mini');
   const miniPrev = document.getElementById('mini-prev');
@@ -4077,9 +4114,12 @@ function updateToneArm() {
 
   if (bpMiniBtn && miniPlayerWidget) {
     bpMiniBtn.onclick = () => {
+      const isOpening = miniPlayerWidget.classList.contains('hidden');
       miniPlayerWidget.classList.toggle('hidden');
+      bpMiniBtn.classList.toggle('active', isOpening);
+      if (ledBpMini) ledBpMini.classList.toggle('active', isOpening);
       playRetroSFX('tab');
-      if (!miniPlayerWidget.classList.contains('hidden')) {
+      if (isOpening) {
         updateMiniPlayerUI();
       }
     };
@@ -4088,6 +4128,8 @@ function updateToneArm() {
   if (btnExpandMini && miniPlayerWidget) {
     btnExpandMini.onclick = () => {
       miniPlayerWidget.classList.add('hidden');
+      if (bpMiniBtn) bpMiniBtn.classList.remove('active');
+      if (ledBpMini) ledBpMini.classList.remove('active');
       switchToPlayerView();
       playRetroSFX('click');
     };
@@ -4097,6 +4139,8 @@ function updateToneArm() {
     miniBody.style.cursor = 'pointer';
     miniBody.onclick = () => {
       miniPlayerWidget.classList.add('hidden');
+      if (bpMiniBtn) bpMiniBtn.classList.remove('active');
+      if (ledBpMini) ledBpMini.classList.remove('active');
       switchToPlayerView();
       playRetroSFX('click');
     };

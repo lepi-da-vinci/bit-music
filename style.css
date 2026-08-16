@@ -492,36 +492,16 @@ body {
   padding: 0;
 }
 
-/* Active Shuffle & Repeat Status Indicators (Turntable, Bottom Player, Album Details) */
-#btn-shuffle.active,
-#bp-shuffle.active,
+/* Active Status Indicators (Album Details & Tactile Hardware) */
 #btn-album-shuffle.active {
   background: rgba(255, 0, 127, 0.25) !important;
   border-color: #ff007f !important;
   color: #ff007f !important;
-  box-shadow: 0 0 14px rgba(255, 0, 127, 0.6), inset 0 0 6px rgba(255, 0, 127, 0.4) !important;
+  box-shadow: 0 0 8px rgba(255, 0, 127, 0.4), inset 0 0 4px rgba(255, 0, 127, 0.3) !important;
 }
 
-#btn-shuffle.active img,
-#btn-shuffle.active #icon-shuffle,
-#bp-shuffle.active img,
 #btn-album-shuffle.active img {
-  filter: drop-shadow(0 0 6px #ff007f) drop-shadow(0 0 12px #ff007f) !important;
-  opacity: 1 !important;
-}
-
-#btn-repeat.active,
-#bp-repeat.active {
-  background: rgba(0, 255, 204, 0.25) !important;
-  border-color: #00ffcc !important;
-  color: #00ffcc !important;
-  box-shadow: 0 0 14px rgba(0, 255, 204, 0.6), inset 0 0 6px rgba(0, 255, 204, 0.4) !important;
-}
-
-#btn-repeat.active img,
-#btn-repeat.active #icon-repeat,
-#bp-repeat.active img {
-  filter: drop-shadow(0 0 6px #00ffcc) drop-shadow(0 0 12px #00ffcc) !important;
+  filter: drop-shadow(0 0 4px #ff007f) !important;
   opacity: 1 !important;
 }
 
@@ -529,8 +509,8 @@ body {
 .bottom-player {
   grid-column: 1 / span 2;
   grid-row: 2;
-  background: rgba(14, 16, 21, 0.95);
-  border-top: 1px solid rgba(255,255,255,0.05);
+  background: rgba(14, 16, 21, 0.98);
+  border-top: 1px solid rgba(255,255,255,0.08);
   z-index: 200;
   display: flex;
   justify-content: space-between;
@@ -544,7 +524,7 @@ body {
 }
 .bp-left { width: 300px; }
 .bp-center { flex: 1; justify-content: center; }
-.bp-right { width: 300px; justify-content: flex-end; }
+.bp-right { width: auto; justify-content: flex-end; gap: 8px; }
 
 .bp-btn {
   background: transparent;
@@ -552,10 +532,130 @@ body {
   color: #fff;
   font-size: 20px;
   cursor: pointer;
-  transition: 0.2s;
+  transition: 0.15s;
 }
-.bp-btn:hover { color: var(--highlight); transform: scale(1.1); }
+.bp-btn:hover { color: var(--highlight); transform: scale(1.08); }
 .play-btn { font-size: 32px; color: var(--highlight); }
+
+/* Tactile Synthesizer Hardware Buttons for Bottom Player */
+.bp-hw-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 25px;
+  padding: 0 7px;
+  background: #191c24;
+  border: 1px solid #0d0f14;
+  border-top: 1px solid #363c4a;
+  border-left: 1px solid #363c4a;
+  border-radius: 3px;
+  box-shadow: 1px 1px 0 #000, inset 1px 1px 0 rgba(255,255,255,0.08);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: bold;
+  color: #8c91a0;
+  transition: all 0.1s ease;
+  user-select: none;
+}
+
+.bp-hw-btn.icon-only {
+  width: 26px;
+  height: 25px;
+  padding: 0;
+}
+
+.bp-hw-btn img.pixel-icon {
+  width: 14px;
+  height: 14px;
+  image-rendering: pixelated;
+  opacity: 0.7;
+  transition: opacity 0.1s, filter 0.1s;
+}
+
+.bp-hw-btn:hover {
+  background: #232834;
+  color: #fff;
+  border-top-color: #4c5468;
+  border-left-color: #4c5468;
+}
+
+.bp-hw-btn:hover img.pixel-icon {
+  opacity: 1;
+}
+
+.bp-hw-btn:active,
+.bp-hw-btn.active {
+  background: #0f1116;
+  border-color: #08090c;
+  border-bottom: 1px solid #282d38;
+  border-right: 1px solid #282d38;
+  box-shadow: inset 1px 1px 2px rgba(0,0,0,0.85);
+  transform: translateY(1px);
+}
+
+.bp-hw-btn.active {
+  color: #fff;
+}
+
+.bp-hw-btn.active img.pixel-icon {
+  opacity: 1;
+}
+
+#bp-shuffle.active img.pixel-icon {
+  filter: drop-shadow(0 0 3px #ff007f);
+}
+
+#bp-repeat.active img.pixel-icon {
+  filter: drop-shadow(0 0 3px #00ffcc);
+}
+
+/* Micro Pixel LED Indicator on Bottom Player Buttons */
+.bp-led {
+  width: 4px;
+  height: 4px;
+  border-radius: 1px;
+  background: #11141a;
+  border: 1px solid #06080b;
+  box-shadow: inset 0 0 1px #000;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.bp-hw-btn.icon-only .bp-led {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 3px;
+  height: 3px;
+}
+
+/* LED On Colors */
+.bp-led.led-cyan.active {
+  background: #00ffcc !important;
+  box-shadow: 0 0 5px #00ffcc, inset 0 0 1px #fff !important;
+  border-color: #80ffe6 !important;
+}
+
+.bp-led.led-pink.active {
+  background: #ff007f !important;
+  box-shadow: 0 0 5px #ff007f, inset 0 0 1px #fff !important;
+  border-color: #ff66b2 !important;
+}
+
+.bp-led.led-yellow.active {
+  background: #ffeb3b !important;
+  box-shadow: 0 0 5px #ffeb3b, inset 0 0 1px #fff !important;
+  border-color: #fff59d !important;
+}
+
+.bp-led.led-green.active {
+  background: #39ff14 !important;
+  box-shadow: 0 0 5px #39ff14, inset 0 0 1px #fff !important;
+  border-color: #99ff80 !important;
+}
 
 .bp-time { font-family: 'Courier New', Courier, monospace; font-size: 11px; color: var(--text-dim); }
 
@@ -867,27 +967,163 @@ body {
   gap: 12px;
 }
 
-/* Controls */
+/* Turntable Controls with Pixel LEDs & RPM Selector */
 .controls {
   position: absolute;
-  bottom: 25px; left: 30px;
+  bottom: 22px;
+  left: 28px;
   z-index: 10;
   display: flex;
   align-items: center;
-  gap: 15px; /* Increased gap to un-squash buttons */
+  gap: 12px;
 }
+
 .control-btn {
-  background: transparent; border: none; cursor: pointer; padding: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
   transition: transform 0.1s;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
-.control-btn:active { transform: scale(0.95); }
-.control-btn img { image-rendering: pixelated; }
-.control-btn.small img { width: 18px; height: 18px; }
+
+.control-btn:active {
+  transform: scale(0.93);
+}
+
+.control-btn img {
+  image-rendering: pixelated;
+}
+
+.control-btn.small img {
+  width: 18px;
+  height: 18px;
+}
+
+/* Turntable Pixel LED Status Lamps */
+.btn-pixel-led {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 4px;
+  height: 4px;
+  border-radius: 1px;
+  background: #111418;
+  border: 1px solid #000;
+  box-shadow: inset 0 0 1px #000;
+  pointer-events: none;
+  z-index: 5;
+  transition: all 0.12s ease;
+}
+
+
+
+/* Shuffle LED (Neon Pink) */
+.btn-pixel-led.led-shuffle {
+  background: #1a0d14;
+  border-color: #0d040a;
+}
+
+.btn-pixel-led.led-shuffle.active {
+  background: #ff007f !important;
+  box-shadow: 0 0 6px #ff007f, inset 0 0 1px #fff !important;
+  border-color: #ff66b2 !important;
+}
+
+/* Repeat LED (Neon Cyan) */
+.btn-pixel-led.led-repeat {
+  background: #0d1a1a;
+  border-color: #040d0d;
+}
+
+.btn-pixel-led.led-repeat.active {
+  background: #00ffcc !important;
+  box-shadow: 0 0 6px #00ffcc, inset 0 0 1px #fff !important;
+  border-color: #80ffe6 !important;
+}
+
+/* RPM Speed Selector (33 & 45 Buttons on top, Numbers below) */
+.speed-control-group {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-left: 10px;
+}
+
+.speed-btn-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.speed-btn {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  background: #252830;
+  border: 1px solid #111;
+  border-top-color: #4c5260;
+  border-left-color: #4c5260;
+  box-shadow: 1px 1px 0 #000, inset 1px 1px 0 rgba(255,255,255,0.1);
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.1s ease;
+  outline: none;
+}
+
+.speed-btn-unit:hover .speed-btn {
+  background: #323744;
+  border-top-color: #60687a;
+  border-left-color: #60687a;
+}
+
+.speed-btn.active {
+  background: #0d0e12;
+  border-color: #000;
+  border-bottom-color: #2e333e;
+  border-right-color: #2e333e;
+  box-shadow: inset 1px 1px 2px rgba(0,0,0,0.9);
+  transform: translateY(1px);
+}
+
+.speed-label {
+  font-size: 11px;
+  font-weight: bold;
+  color: #4a505e;
+  text-shadow: 1px 1px 0 #000;
+  transition: all 0.15s ease;
+  letter-spacing: 0.5px;
+}
+
+.speed-btn-unit:hover .speed-label {
+  color: #8c91a0;
+}
+
+/* 33 RPM Active State (Amber Gold) */
+#btn-speed-33.active,
+.speed-btn-unit#unit-speed-33 .speed-label.active {
+  color: #ffeb3b !important;
+  text-shadow: 0 0 6px rgba(255, 235, 59, 0.75), 1px 1px 0 #000 !important;
+}
+
+/* 45 RPM Active State (Neon Sunset Orange/Red) */
+#btn-speed-45.active,
+.speed-btn-unit#unit-speed-45 .speed-label.active {
+  color: #ff5722 !important;
+  text-shadow: 0 0 6px rgba(255, 87, 34, 0.85), 1px 1px 0 #000 !important;
+}
 
 /* Volume Slider */
 .volume-container {
   position: relative;
-  width: 26px; height: 120px;
+  width: 26px;
+  height: 120px;
 }
 
 .mixer-panel { 

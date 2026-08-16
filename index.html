@@ -275,16 +275,34 @@
 
               <!-- Playback Controls -->
               <div class="controls">
-                <button id="btn-play" class="control-btn"><img id="icon-play" src="assets/btn_start_stop.png"></button>
-                <button id="btn-prev" class="control-btn small"><img src="assets/btn_prev.png"></button>
-                <button id="btn-shuffle" class="control-btn small"><img id="icon-shuffle" src="assets/btn_shuffle.png"></button>
-                <button id="btn-repeat" class="control-btn small"><img id="icon-repeat" src="assets/btn_repeat.png"></button>
-                <button id="btn-next" class="control-btn small"><img src="assets/btn_next.png"></button>
+                <button id="btn-play" class="control-btn turntable-btn" title="Start / Stop (Spasi)">
+                  <img id="icon-play" src="assets/btn_start_stop.png">
+                </button>
+                <button id="btn-prev" class="control-btn small turntable-btn" title="Sebelumnya (P)">
+                  <img src="assets/btn_prev.png">
+                </button>
+                <button id="btn-shuffle" class="control-btn small turntable-btn" title="Putar Acak (S)">
+                  <span class="btn-pixel-led led-shuffle" id="led-tt-shuffle"></span>
+                  <img id="icon-shuffle" src="assets/btn_shuffle.png">
+                </button>
+                <button id="btn-repeat" class="control-btn small turntable-btn" title="Ulangi Lagu (R)">
+                  <span class="btn-pixel-led led-repeat" id="led-tt-repeat"></span>
+                  <img id="icon-repeat" src="assets/btn_repeat.png">
+                </button>
+                <button id="btn-next" class="control-btn small turntable-btn" title="Berikutnya (N)">
+                  <img src="assets/btn_next.png">
+                </button>
                 
-                <!-- Speeds -->
-                <div style="display: flex; gap: 12px; align-items: center; margin-left: 15px; margin-top: 5px;">
-                  <span class="speed-text" id="btn-speed-33" style="cursor:pointer; color: var(--gold); font-size: 11px; font-weight: bold;">33</span>
-                  <span class="speed-text" id="btn-speed-45" style="cursor:pointer; color: #8c91a0; font-size: 11px; font-weight: bold;">45</span>
+                <!-- RPM Speed Selectors (33 & 45 RPM Tactile Buttons with labels below) -->
+                <div class="speed-control-group">
+                  <div class="speed-btn-unit" id="unit-speed-33" title="Kecepatan Standar: 33⅓ RPM">
+                    <button class="speed-btn active" id="btn-speed-33-btn"></button>
+                    <span class="speed-label active" id="btn-speed-33">33</span>
+                  </div>
+                  <div class="speed-btn-unit" id="unit-speed-45" title="Kecepatan Cepat: 45 RPM">
+                    <button class="speed-btn" id="btn-speed-45-btn"></button>
+                    <span class="speed-label" id="btn-speed-45">45</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -410,13 +428,33 @@
           <input type="range" id="bp-vol-slider" min="0" max="1" step="0.01" value="0.5" style="width: 70px; height: 4px; accent-color: white; cursor: pointer;">
           <span style="font-size: 16px; color: #aaa;" title="Volume"><img class="pixel-icon" src="assets/icons/icon_volume.bmp"></span>
         </div>
-        <button class="bp-btn small" id="bp-sfx-toggle" title="Suara Retro SFX: Aktif" style="font-family: inherit; font-size: 10px; font-weight: bold; color: #00ffcc; border: 1px solid #00ffcc; border-radius: 4px; padding: 2px 5px; width: auto; height: 24px; background: rgba(0,255,204,0.1); cursor: pointer;">SFX</button>
-        <button class="bp-btn small" id="bp-lyrics-btn" title="Lirik Karaoke (Shortcut: K)" style="font-family: inherit; font-size: 10px; font-weight: bold; color: #ff007f; border: 1px solid #ff007f; border-radius: 4px; padding: 2px 5px; width: auto; height: 24px; background: rgba(255,0,127,0.1); cursor: pointer;">LRC</button>
-        <button class="bp-btn small" id="bp-mini-btn" title="Mini Floating Player" style="font-family: inherit; font-size: 10px; font-weight: bold; color: #ffeb3b; border: 1px solid #ffeb3b; border-radius: 4px; padding: 2px 5px; width: auto; height: 24px; background: rgba(255,235,59,0.1); cursor: pointer;">MINI</button>
-        <button class="bp-btn small" id="bp-repeat" title="Repeat" style="font-size: 16px; color: #777; transition: color 0.2s;"><img class="pixel-icon" src="assets/icons/icon_repeat.bmp"></button>
-        <button class="bp-btn small" id="bp-shuffle" title="Shuffle" style="font-size: 16px; color: #777; transition: color 0.2s;"><img class="pixel-icon" src="assets/icons/icon_shuffle.bmp"></button>
-        <button class="bp-btn small" id="bp-queue-btn" title="Antrean Lagu (Shortcut: Q)" style="font-size: 16px; color: #aaa; transition: color 0.2s;"><img class="pixel-icon" src="assets/icons/icon_more.bmp"></button>
-        <button class="bp-btn small" id="bp-toggle-player" style="margin-left: 5px;"><img class="pixel-icon" src="assets/icons/icon_up.bmp"></button>
+        <!-- Tactile Hardware Buttons with Micro Pixel LEDs -->
+        <button class="bp-hw-btn active" id="bp-sfx-toggle" title="Suara Retro SFX: Aktif">
+          <span class="bp-led led-cyan active" id="led-bp-sfx"></span>
+          <span class="bp-hw-label">SFX</span>
+        </button>
+        <button class="bp-hw-btn" id="bp-lyrics-btn" title="Lirik Karaoke (Shortcut: K)">
+          <span class="bp-led led-pink" id="led-bp-lrc"></span>
+          <span class="bp-hw-label">LRC</span>
+        </button>
+        <button class="bp-hw-btn" id="bp-mini-btn" title="Mini Floating Player">
+          <span class="bp-led led-yellow" id="led-bp-mini"></span>
+          <span class="bp-hw-label">MINI</span>
+        </button>
+        <button class="bp-hw-btn icon-only" id="bp-repeat" title="Ulangi Lagu (Shortcut: R)">
+          <span class="bp-led led-cyan" id="led-bp-repeat"></span>
+          <img class="pixel-icon" src="assets/icons/icon_repeat.bmp">
+        </button>
+        <button class="bp-hw-btn icon-only" id="bp-shuffle" title="Putar Acak (Shortcut: S)">
+          <span class="bp-led led-pink" id="led-bp-shuffle"></span>
+          <img class="pixel-icon" src="assets/icons/icon_shuffle.bmp">
+        </button>
+        <button class="bp-hw-btn icon-only" id="bp-queue-btn" title="Antrean Lagu (Shortcut: Q)">
+          <img class="pixel-icon" src="assets/icons/icon_more.bmp">
+        </button>
+        <button class="bp-hw-btn icon-only" id="bp-toggle-player" title="Buka / Tutup Layar Pemutar Vinyl">
+          <img class="pixel-icon" src="assets/icons/icon_up.bmp">
+        </button>
       </div>
     </footer>
   </div>
