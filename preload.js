@@ -6,5 +6,6 @@ contextBridge.exposeInMainWorld('api', {
   getMusicPath: (filename) => `music/${filename}`,
   logError: (err) => ipcRenderer.invoke('log-error', err),
   readLyric: (filename) => ipcRenderer.invoke('read-lyric', filename),
-  saveLyric: (data) => ipcRenderer.invoke('save-lyric', data)
+  saveLyric: (data) => ipcRenderer.invoke('save-lyric', data),
+  fetchOnlineLyrics: (query) => ipcRenderer.invoke('fetch-online-lyrics', query)
 })

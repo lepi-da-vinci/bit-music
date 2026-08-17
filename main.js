@@ -178,6 +178,151 @@ ipcMain.handle('save-lyric', async (event, data) => {
   }
 });
 
+// Convert seconds to [mm:ss.xx] format
+function secToLrcTag(seconds) {
+  const s = parseFloat(seconds) || 0;
+  const m = Math.floor(s / 60);
+  const remSec = (s % 60).toFixed(2);
+  const mStr = m.toString().padStart(2, '0');
+  const sStr = remSec.padStart(5, '0');
+  return `[${mStr}:${sStr}]`;
+}
+
+function decodeHtmlEntities(str) {
+  return (str || '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/\n/g, ' ')
+    .trim();
+}
+
+// Multi-Source Online Lyrics Engine (YouTube Captions / LRCLIB / Lyrist)
+ipcMain.handle('fetch-online-lyrics', async (event, query) => {
+  const { title, artist, filename } = query;
+  
+  let cleanTitle = (title || '').replace(/\.[^/.]+$/, '');
+  cleanTitle = cleanTitle.replace(/\[[a-zA-Z0-9_\-]+\]/g, '');
+  cleanTitle = cleanTitle.replace(/\(Official[^\)]*\)/gi, '');
+  cleanTitle = cleanTitle.replace(/\(feat[^\)]*\)/gi, '');
+  cleanTitle = cleanTitle.replace(/_ Lyrics[^\)]*/gi, '');
+  cleanTitle = cleanTitle.replace(/– Twin Ver\./gi, '');
+  cleanTitle = cleanTitle.replace(/\(Spider-Man[^\)]*\)/gi, '');
+  cleanTitle = cleanTitle.trim();
+
+  let cleanArtist = (artist || '').replace(/- Topic/gi, '').trim();
+  if (cleanArtist === 'Unknown Artist' || cleanArtist === 'Berkas Lokal') cleanArtist = '';
+
+  // Extract potential YouTube Video ID from filename or title
+  const ytMatch = (filename || title || '').match(/(?:\[|v=|_)([a-zA-Z0-9_-]{11})(?:\]|\&|$)/);
+  const ytVideoId = ytMatch ? ytMatch[1] : null;
+
+  // 1. ENGINE 1: YouTube Timed Subtitles (Direct from YouTube captions)
+  if (ytVideoId) {
+    try {
+      const langCodes = ['en', 'id', 'en-US', 'a.en', ''];
+      for (const lang of langCodes) {
+        const ytUrl = lang 
+          ? `https://www.youtube.com/api/timedtext?v=${ytVideoId}&lang=${lang}`
+          : `https://www.youtube.com/api/timedtext?v=${ytVideoId}`;
+        
+        const ytRes = await fetch(ytUrl, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+        if (ytRes.ok) {
+          const xml = await ytRes.text();
+          if (xml && xml.includes('<text start=')) {
+            const matches = [...xml.matchAll(/<text start="([^"]+)"(?: dur="[^"]+")?>([^<]+)<\/text>/g)];
+            if (matches.length > 5) {
+              const lrcLines = matches.map(m => {
+                const tag = secToLrcTag(m[1]);
+                const text = decodeHtmlEntities(m[2]);
+                return `${tag} ${text}`;
+              }).filter(l => l.trim().length > 10);
+
+              if (lrcLines.length > 5) {
+                const fullLrc = `[ti:${cleanTitle}]\n[ar:${cleanArtist || 'YouTube Music'}]\n[by:YouTube Music Subtitles]\n` + lrcLines.join('\n');
+                // Auto-save to local lyrics/
+                try {
+                  const lyricsDir = path.join(__dirname, 'lyrics');
+                  if (!fs.existsSync(lyricsDir)) fs.mkdirSync(lyricsDir, { recursive: true });
+                  const safeName = (filename || cleanTitle).replace(/\.[^/.]+$/, '') + '.lrc';
+                  fs.writeFileSync(path.join(lyricsDir, safeName), fullLrc, 'utf8');
+                } catch (e) {}
+
+                return { success: true, synced: true, content: fullLrc, source: '📺 YOUTUBE MUSIC CAPTIONS' };
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  // 2. ENGINE 2: LRCLIB API (Direct Get & Broad Search)
+  try {
+    let getUrl = `https://lrclib.net/api/get?track_name=${encodeURIComponent(cleanTitle)}`;
+    if (cleanArtist) getUrl += `&artist_name=${encodeURIComponent(cleanArtist)}`;
+    const lrcRes = await fetch(getUrl);
+    if (lrcRes.ok) {
+      const data = await lrcRes.json();
+      if (data.syncedLyrics && data.syncedLyrics.length > 30) {
+        try {
+          const lyricsDir = path.join(__dirname, 'lyrics');
+          if (!fs.existsSync(lyricsDir)) fs.mkdirSync(lyricsDir, { recursive: true });
+          const safeName = (filename || cleanTitle).replace(/\.[^/.]+$/, '') + '.lrc';
+          fs.writeFileSync(path.join(lyricsDir, safeName), data.syncedLyrics, 'utf8');
+        } catch (e) {}
+        return { success: true, synced: true, content: data.syncedLyrics, source: '🌐 LRCLIB SINKRON' };
+      }
+      if (data.plainLyrics && data.plainLyrics.length > 30) {
+        return { success: true, synced: false, content: data.plainLyrics, source: '📄 LRCLIB TEKS' };
+      }
+    }
+  } catch (e) {}
+
+  try {
+    const searchQuery = cleanArtist ? `${cleanTitle} ${cleanArtist}` : cleanTitle;
+    const searchRes = await fetch(`https://lrclib.net/api/search?q=${encodeURIComponent(searchQuery)}`);
+    if (searchRes.ok) {
+      const list = await searchRes.json();
+      if (Array.isArray(list) && list.length > 0) {
+        const syncedItem = list.find(item => item.syncedLyrics && item.syncedLyrics.length > 30);
+        if (syncedItem) {
+          try {
+            const lyricsDir = path.join(__dirname, 'lyrics');
+            if (!fs.existsSync(lyricsDir)) fs.mkdirSync(lyricsDir, { recursive: true });
+            const safeName = (filename || cleanTitle).replace(/\.[^/.]+$/, '') + '.lrc';
+            fs.writeFileSync(path.join(lyricsDir, safeName), syncedItem.syncedLyrics, 'utf8');
+          } catch (e) {}
+          return { success: true, synced: true, content: syncedItem.syncedLyrics, source: '🌐 LRCLIB SINKRON' };
+        }
+        if (list[0].plainLyrics && list[0].plainLyrics.length > 30) {
+          return { success: true, synced: false, content: list[0].plainLyrics, source: '📄 LRCLIB TEKS' };
+        }
+      }
+    }
+  } catch (e) {}
+
+  // 3. ENGINE 3: Lyrist Web Lyrics API (Complete Formatted Text Lyrics)
+  try {
+    const lyristQuery = cleanArtist 
+      ? `https://lyrist.vercel.app/api/${encodeURIComponent(cleanTitle)}/${encodeURIComponent(cleanArtist)}`
+      : `https://lyrist.vercel.app/api/${encodeURIComponent(cleanTitle)}`;
+    
+    const lyristRes = await fetch(lyristQuery);
+    if (lyristRes.ok) {
+      const lyristData = await lyristRes.json();
+      if (lyristData && lyristData.lyrics && lyristData.lyrics.length > 30) {
+        return { success: true, synced: false, content: lyristData.lyrics, source: '📖 WEB LYRICS (GENIUS/SPOTIFY)' };
+      }
+    }
+  } catch (e) {}
+
+  return { success: false, message: 'Lirik tidak ditemukan di semua sumber online' };
+});
+
 ipcMain.handle('log-error', (event, err) => {
   fs.writeFileSync('error_log.txt', err);
-})
+});

@@ -1345,7 +1345,18 @@ try {
     return result;
   }
 
-  async function fetchOnlineLyrics(title, artist) {
+  // Multi-Engine Online Lyrics Fetcher Client
+  async function fetchOnlineLyrics(title, artist, filename) {
+    if (window.api && window.api.fetchOnlineLyrics) {
+      try {
+        const res = await window.api.fetchOnlineLyrics({ title, artist, filename });
+        if (res && res.success && res.content) {
+          return { synced: res.synced, content: res.content, source: res.source || 'ONLINE' };
+        }
+      } catch (e) {}
+    }
+
+    // Direct client fallback
     try {
       let cleanTitle = (title || '').replace(/\.[^/.]+$/, '');
       cleanTitle = cleanTitle.replace(/\[[a-zA-Z0-9_\-]+\]/g, '');
@@ -1357,7 +1368,7 @@ try {
       cleanTitle = cleanTitle.trim();
 
       let cleanArtist = (artist || '').replace(/- Topic/gi, '').trim();
-      if (cleanArtist === 'Unknown Artist') cleanArtist = '';
+      if (cleanArtist === 'Unknown Artist' || cleanArtist === 'Berkas Lokal') cleanArtist = '';
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 2500);
@@ -1371,7 +1382,7 @@ try {
           const data = await res.json();
           if (data.syncedLyrics && data.syncedLyrics.length > 30) {
             clearTimeout(timeoutId);
-            return { synced: true, content: data.syncedLyrics };
+            return { synced: true, content: data.syncedLyrics, source: '🌐 LRCLIB SINKRON' };
           }
         }
       } catch (e) {}
@@ -1386,11 +1397,11 @@ try {
             const syncedItem = list.find(item => item.syncedLyrics && item.syncedLyrics.length > 30);
             if (syncedItem) {
               clearTimeout(timeoutId);
-              return { synced: true, content: syncedItem.syncedLyrics };
+              return { synced: true, content: syncedItem.syncedLyrics, source: '🌐 LRCLIB SINKRON' };
             }
             if (list[0].plainLyrics) {
               clearTimeout(timeoutId);
-              return { synced: false, content: list[0].plainLyrics };
+              return { synced: false, content: list[0].plainLyrics, source: '📄 LRCLIB TEKS' };
             }
           }
         }
@@ -1401,8 +1412,12 @@ try {
     return null;
   }
 
-  // Real-time Lyrics Synchronization & Offset Manager
+  // Real-time Lyrics Synchronization, Dual Mode & Offset Manager
   let currentLyricOffset = 0.0;
+  let currentLyricMode = localStorage.getItem('preferred_lyric_mode') || 'karaoke'; // 'karaoke' | 'read'
+  const lyricFontSizes = ['font-sm', 'font-md', 'font-lg'];
+  let currentFontSizeIdx = parseInt(localStorage.getItem('lyric_font_size_idx') || '1', 10);
+  let currentLyricsData = { list: [], sourceBadge: '', isSynced: false, rawText: '' };
 
   function loadLyricOffset(trackKey) {
     const saved = localStorage.getItem(`lyric_offset_${trackKey}`);
@@ -1429,12 +1444,51 @@ try {
     showToast(`⏱️ Sinkronisasi Lirik: ${currentLyricOffset >= 0 ? '+' : ''}${currentLyricOffset.toFixed(1)} detik`);
   }
 
-  function renderLyricsUI(lyricsList, sourceBadge = '') {
+  function setLyricFontSize(delta) {
+    currentFontSizeIdx = Math.max(0, Math.min(lyricFontSizes.length - 1, currentFontSizeIdx + delta));
+    localStorage.setItem('lyric_font_size_idx', currentFontSizeIdx.toString());
+    const lyricsContent = document.getElementById('lyrics-content');
+    if (lyricsContent) {
+      lyricsContent.classList.remove(...lyricFontSizes);
+      lyricsContent.classList.add(lyricFontSizes[currentFontSizeIdx]);
+    }
+    playRetroSFX('click');
+  }
+
+  function setLyricMode(mode, notify = true) {
+    currentLyricMode = mode;
+    localStorage.setItem('preferred_lyric_mode', mode);
+
+    const btnKaraoke = document.getElementById('btn-mode-karaoke');
+    const btnRead = document.getElementById('btn-mode-read');
+    const syncBar = document.getElementById('lyrics-sync-bar');
+    const readerTools = document.getElementById('lyrics-reader-tools');
+
+    if (btnKaraoke) btnKaraoke.classList.toggle('active', mode === 'karaoke');
+    if (btnRead) btnRead.classList.toggle('active', mode === 'read');
+
+    if (syncBar) syncBar.classList.toggle('hidden', mode !== 'karaoke');
+    if (readerTools) readerTools.classList.toggle('hidden', mode !== 'read');
+
+    renderLyricsUI();
+
+    if (notify) {
+      playRetroSFX('tab');
+      showToast(mode === 'karaoke' ? '🎤 Mode Karaoke Sinkron: Aktif' : '📖 Mode Baca Lirik: Aktif');
+    }
+  }
+
+  function renderLyricsUI() {
     const lyricsContent = document.getElementById('lyrics-content');
     if (!lyricsContent) return;
 
     lyricsContent.innerHTML = '';
-    
+    lyricsContent.classList.remove(...lyricFontSizes);
+    lyricsContent.classList.add(lyricFontSizes[currentFontSizeIdx]);
+
+    const { list, sourceBadge, isSynced, rawText } = currentLyricsData;
+    if (!list || list.length === 0) return;
+
     if (sourceBadge) {
       const badge = document.createElement('div');
       badge.style.cssText = 'font-size: 10px; color: #00ffcc; text-align: center; margin-bottom: 12px; opacity: 0.85; letter-spacing: 1px; font-weight: bold;';
@@ -1442,18 +1496,56 @@ try {
       lyricsContent.appendChild(badge);
     }
 
-    lyricsList.forEach((item, idx) => {
-      const lineEl = document.createElement('div');
-      lineEl.className = 'lyrics-line'; // Do NOT highlight until song reaches time
-      lineEl.id = `lyric-line-${idx}`;
-      lineEl.innerText = item.text;
-      lineEl.title = `Klik untuk lompat ke detik ${Math.round(item.time)}`;
-      lineEl.onclick = () => {
-        audio.currentTime = Math.max(0, item.time - currentLyricOffset);
-        playRetroSFX('click');
-      };
-      lyricsContent.appendChild(lineEl);
-    });
+    if (currentLyricMode === 'karaoke' && isSynced) {
+      // 1. KARAOKE MODE: Interactive Synced Lines
+      list.forEach((item, idx) => {
+        const lineEl = document.createElement('div');
+        lineEl.className = 'lyrics-line';
+        lineEl.id = `lyric-line-${idx}`;
+        lineEl.innerText = item.text;
+        lineEl.title = `Klik untuk lompat ke detik ${Math.round(item.time)}`;
+        lineEl.onclick = () => {
+          audio.currentTime = Math.max(0, item.time - currentLyricOffset);
+          playRetroSFX('click');
+        };
+        lyricsContent.appendChild(lineEl);
+      });
+      syncLyricsTime(audio.currentTime);
+    } else {
+      // 2. READ MODE / PLAIN TEXT: Full formatted lyrics reading view
+      const readView = document.createElement('div');
+      readView.className = 'lyrics-read-view';
+
+      list.forEach((item) => {
+        const lineEl = document.createElement('div');
+        lineEl.className = 'lyrics-read-line' + (isSynced ? ' has-timestamp' : '');
+        
+        if (isSynced) {
+          const m = Math.floor(item.time / 60);
+          const s = Math.floor(item.time % 60);
+          const timeTag = document.createElement('span');
+          timeTag.className = 'read-time-tag';
+          timeTag.innerText = `[${m}:${s.toString().padStart(2, '0')}]`;
+          lineEl.appendChild(timeTag);
+        }
+
+        const textSpan = document.createElement('span');
+        textSpan.innerText = item.text;
+        lineEl.appendChild(textSpan);
+
+        if (isSynced) {
+          lineEl.title = `Klik untuk lompat ke detik ${Math.round(item.time)}`;
+          lineEl.onclick = () => {
+            audio.currentTime = Math.max(0, item.time - currentLyricOffset);
+            playRetroSFX('click');
+          };
+        }
+
+        readView.appendChild(lineEl);
+      });
+
+      lyricsContent.appendChild(readView);
+    }
 
     // Wire offset adjuster buttons
     const btnDelay = document.getElementById('btn-lyric-delay');
@@ -1474,8 +1566,26 @@ try {
       showToast('⏱️ Offset Lirik direset ke 0.0s');
     };
 
-    // Immediate sync check with current playback position
-    syncLyricsTime(audio.currentTime);
+    const btnFontSmaller = document.getElementById('btn-font-smaller');
+    if (btnFontSmaller) btnFontSmaller.onclick = () => setLyricFontSize(-1);
+
+    const btnFontLarger = document.getElementById('btn-font-larger');
+    if (btnFontLarger) btnFontLarger.onclick = () => setLyricFontSize(1);
+
+    const btnCopy = document.getElementById('btn-copy-lyrics');
+    if (btnCopy) {
+      btnCopy.onclick = () => {
+        const textToCopy = rawText || list.map(l => l.text).join('\n');
+        if (textToCopy) {
+          navigator.clipboard.writeText(textToCopy).then(() => {
+            playRetroSFX('like');
+            showToast('📋 Seluruh lirik berhasil disalin!');
+          }).catch(() => {
+            showToast('Gagal menyalin lirik');
+          });
+        }
+      };
+    }
   }
 
   async function updateLyricsDrawer(forceReload = false) {
@@ -1484,6 +1594,12 @@ try {
     const lyricsArtist = document.getElementById('lyrics-artist');
     const lyricsContent = document.getElementById('lyrics-content');
     if (!lyricsContent) return;
+
+    // Mode tab buttons
+    const btnKaraoke = document.getElementById('btn-mode-karaoke');
+    const btnRead = document.getElementById('btn-mode-read');
+    if (btnKaraoke) btnKaraoke.onclick = () => setLyricMode('karaoke');
+    if (btnRead) btnRead.onclick = () => setLyricMode('read');
 
     const track = playlist[currentIndex];
     if (!track) {
@@ -1503,6 +1619,7 @@ try {
 
     currentLyricTrackKey = trackKey;
     currentLyrics = [];
+    currentLyricsData = { list: [], sourceBadge: '', isSynced: false, rawText: '' };
 
     const cleanFn = (track.filename || track.title || '').toLowerCase().replace(/\.[^/.]+$/, '').trim();
     const cleanAlpha = cleanFn.replace(/[^a-z0-9]/g, '');
@@ -1514,7 +1631,13 @@ try {
         const txt = await directRes.text();
         if (txt && txt.length > 30) {
           currentLyrics = parseLRC(txt);
-          renderLyricsUI(currentLyrics, '📁 LIRIK LOKAL (lyrics/)');
+          currentLyricsData = {
+            list: currentLyrics,
+            sourceBadge: '📁 LIRIK LOKAL (lyrics/)',
+            isSynced: true,
+            rawText: currentLyrics.map(l => l.text).join('\n')
+          };
+          setLyricMode(currentLyricMode, false);
           return;
         }
       }
@@ -1526,7 +1649,13 @@ try {
         if (localRes && localRes.success && localRes.content && localRes.content.length > 30) {
           currentLyrics = parseLRC(localRes.content);
           if (currentLyrics.length > 0) {
-            renderLyricsUI(currentLyrics, '📁 LIRIK LOKAL (lyrics/)');
+            currentLyricsData = {
+              list: currentLyrics,
+              sourceBadge: '📁 LIRIK LOKAL (lyrics/)',
+              isSynced: true,
+              rawText: currentLyrics.map(l => l.text).join('\n')
+            };
+            setLyricMode(currentLyricMode, false);
             return;
           }
         }
@@ -1538,27 +1667,36 @@ try {
       const keyAlpha = key.replace(/[^a-z0-9]/g, '');
       if (cleanAlpha.includes(keyAlpha) || keyAlpha.includes(cleanAlpha)) {
         currentLyrics = parseLRC(lrcVal);
-        renderLyricsUI(currentLyrics, '📁 LIRIK LOKAL (lyrics/)');
+        currentLyricsData = {
+          list: currentLyrics,
+          sourceBadge: '📁 LIRIK LOKAL (lyrics/)',
+          isSynced: true,
+          rawText: currentLyrics.map(l => l.text).join('\n')
+        };
+        setLyricMode(currentLyricMode, false);
         return;
       }
     }
 
-    // 3. Online Search with loading indicator (max 2.5s)
+    // 3. Online Search with loading indicator (YouTube Music / LRCLIB / Lyrist)
     lyricsContent.innerHTML = `
       <div style="color: #00ffcc; font-size: 14px; padding: 40px 0; text-align: center;">
         <div style="font-size: 24px; margin-bottom: 8px;">⏳</div>
-        <div>Mencari lirik sinkron di database online...</div>
+        <div>Mencari lirik di YouTube Music & Database Online...</div>
       </div>
     `;
 
-    const onlineResult = await fetchOnlineLyrics(track.title, track.artist);
+    const onlineResult = await fetchOnlineLyrics(track.title, track.artist, track.filename);
     if (onlineResult && onlineResult.content) {
       if (onlineResult.synced) {
         currentLyrics = parseLRC(onlineResult.content);
-        if (window.api && window.api.saveLyric) {
-          window.api.saveLyric({ filename: track.filename, content: onlineResult.content });
-        }
-        renderLyricsUI(currentLyrics, '🌐 LIRIK SINKRON ONLINE');
+        currentLyricsData = {
+          list: currentLyrics,
+          sourceBadge: onlineResult.source || '🌐 LIRIK SINKRON ONLINE',
+          isSynced: true,
+          rawText: currentLyrics.map(l => l.text).join('\n')
+        };
+        setLyricMode(currentLyricMode, false);
         return;
       } else {
         const plainLines = onlineResult.content.split('\n').filter(l => l.trim().length > 0);
@@ -1568,7 +1706,14 @@ try {
           time: Math.round((i + 1) * step),
           text: text.trim()
         }));
-        renderLyricsUI(currentLyrics, '📄 LIRIK TEKS');
+        currentLyricsData = {
+          list: currentLyrics,
+          sourceBadge: onlineResult.source || '📖 LIRIK TEKS (WEB)',
+          isSynced: false,
+          rawText: onlineResult.content
+        };
+        // Auto switch to Read mode for unsynced plain text
+        setLyricMode('read', false);
         return;
       }
     }
@@ -1590,6 +1735,7 @@ try {
   }
 
   function syncLyricsTime(currentTime) {
+    if (currentLyricMode !== 'karaoke') return;
     if (!currentLyrics || currentLyrics.length === 0) return;
     const effectiveTime = currentTime + currentLyricOffset;
     let activeIdx = -1;
