@@ -13,6 +13,9 @@
   <!-- Starry Background -->
   <div id="stars-container"></div>
 
+  <!-- Dynamic Ambient Lighting Glow (Syncs with Vinyl & Cover Art) -->
+  <div id="ambient-glow" class="ambient-glow"></div>
+
   <div class="app-layout">
     <!-- SIDEBAR -->
     <aside class="sidebar">
@@ -20,33 +23,44 @@
         <span style="color:#ff0000; font-size:24px; vertical-align: middle;">▶</span> <span class="pixel-text">Music</span>
       </div>
       <nav class="sidebar-nav">
-        <a href="#" class="nav-item active" id="nav-home">
+        <a href="#" class="nav-item active" id="nav-home" title="Beranda (Home)">
           <img src="assets/icons/nav_home.bmp" onerror="this.style.display='none'">
           <span>Beranda</span>
         </a>
-        <a href="#" class="nav-item" id="nav-explore">
+        <a href="#" class="nav-item" id="nav-explore" title="Eksplorasi (Explore)">
           <img src="assets/icons/nav_explore.bmp" onerror="this.style.display='none'">
           <span>Eksplorasi</span>
         </a>
-        <a href="#" class="nav-item" id="nav-library">
+        <a href="#" class="nav-item" id="nav-library" title="Koleksi & Playlist (Library)">
           <img src="assets/icons/nav_library.bmp" onerror="this.style.display='none'">
           <span>Koleksi</span>
         </a>
       </nav>
+
+      <!-- Sidebar Bottom Shortcuts -->
+      <div class="sidebar-footer" style="margin-top: auto; padding: 15px 20px; display: flex; flex-direction: column; gap: 8px; border-top: 1px solid rgba(255,255,255,0.05);">
+        <button id="btn-sidebar-palette" class="sidebar-action-btn" title="Command Palette (Shortcut: Ctrl+K)">
+          <span>⚡</span> <span>Perintah (Ctrl+K)</span>
+        </button>
+        <button id="btn-sidebar-settings" class="sidebar-action-btn" title="Buka Pengaturan Audio & Aplikasi">
+          <span>⚙️</span> <span>Pengaturan</span>
+        </button>
+      </div>
     </aside>
 
     <!-- MAIN CONTENT -->
     <main class="main-content">
       
-      <!-- HOME VIEW -->
+      <!-- 1. HOME VIEW -->
       <div id="home-view" class="view-container active">
         <div class="top-bar" style="position: relative;">
           <div class="search-bar">
             <span class="search-icon"><img class="pixel-icon" src="assets/icons/icon_search.bmp"></span>
-            <input type="text" id="home-search-input" placeholder="Telusuri lagu, album, artis...">
+            <input type="text" id="home-search-input" placeholder="Telusuri lagu, album, artis... (Ctrl+K)">
           </div>
           <div id="home-search-results" class="live-search-results hidden"></div>
         </div>
+        
         <div class="mood-chips">
           <button class="mood-chip active" data-mood="all">Semua</button>
           <button class="mood-chip" data-mood="sedih">Sedih</button>
@@ -71,6 +85,23 @@
             </div>
           </div>
           <div class="quick-picks-grid" id="home-quick-picks">
+            <!-- Injected by JS -->
+          </div>
+        </div>
+
+        <!-- SECTION: BARU SAJA DIPUTAR (RECENTLY PLAYED) -->
+        <div class="carousel-section" id="section-recently-played" style="display: none;">
+          <div class="section-header-row">
+            <div class="section-header-left">
+              <div class="section-subtitle">RIWAYAT ANDA</div>
+              <h2 class="section-title">Baru saja diputar</h2>
+            </div>
+            <div class="section-header-right">
+              <button class="carousel-nav-btn" data-target="home-recently-played" data-dir="-1" title="Sebelumnya">⟨</button>
+              <button class="carousel-nav-btn" data-target="home-recently-played" data-dir="1" title="Berikutnya">⟩</button>
+            </div>
+          </div>
+          <div class="carousel" id="home-recently-played">
             <!-- Injected by JS -->
           </div>
         </div>
@@ -109,6 +140,23 @@
           </div>
         </div>
 
+        <!-- SECTION: PALING SERING DIPUTAR (MOST PLAYED) -->
+        <div class="carousel-section" id="section-most-played" style="display: none;">
+          <div class="section-header-row">
+            <div class="section-header-left">
+              <div class="section-subtitle">LAGU FAVORIT ANDA</div>
+              <h2 class="section-title">Paling sering diputar</h2>
+            </div>
+            <div class="section-header-right">
+              <button class="carousel-nav-btn" data-target="home-most-played" data-dir="-1" title="Sebelumnya">⟨</button>
+              <button class="carousel-nav-btn" data-target="home-most-played" data-dir="1" title="Berikutnya">⟩</button>
+            </div>
+          </div>
+          <div class="carousel" id="home-most-played">
+            <!-- Injected by JS -->
+          </div>
+        </div>
+
         <!-- SECTION 4: DENGARKAN LAGI -->
         <div class="carousel-section" style="margin-bottom: 80px;">
           <div class="section-header-row">
@@ -126,7 +174,8 @@
           </div>
         </div>
       </div>
-      <!-- EXPLORE VIEW -->
+
+      <!-- 2. EXPLORE VIEW -->
       <div id="explore-view" class="view-container hidden" style="padding: 30px; overflow-y: auto;">
         <div class="top-bar" style="position: relative;">
           <div class="search-bar">
@@ -158,8 +207,10 @@
             <div class="genre-card" style="background: linear-gradient(135deg, #1a1c2c, #5d275d);">8-Bit</div>
             <div class="genre-card" style="background: linear-gradient(135deg, #0f380f, #8bac0f);">Chiptune</div>
             <div class="genre-card" style="background: linear-gradient(135deg, #2ce8f4, #f038ff);">Vaporwave</div>
-            <div class="genre-card" style="background: linear-gradient(135deg, #b55945, #ea8b54);">Arcade</div>
-            <div class="genre-card" style="background: linear-gradient(135deg, #404973, #68aed4);">Dream Pop</div>
+            <div class="genre-card" style="background: linear-gradient(135deg, #404973, #68aed4);">Shoegaze</div>
+            <div class="genre-card" style="background: linear-gradient(135deg, #b55945, #ea8b54);">Indie Pop</div>
+            <div class="genre-card" style="background: linear-gradient(135deg, #8b5cf6, #ec4899);">R&B / Soul</div>
+            <div class="genre-card" style="background: linear-gradient(135deg, #ef4444, #f97316);">Pop-Punk</div>
           </div>
         </div>
         
@@ -173,7 +224,7 @@
         </div>
       </div>
 
-      <!-- LIBRARY VIEW -->
+      <!-- 3. LIBRARY VIEW -->
       <div id="library-view" class="view-container hidden" style="padding: 30px;">
         
         <!-- Album Grid -->
@@ -192,7 +243,6 @@
 
         <!-- Album Detail (Tracklist) -->
         <div id="library-album-detail" class="hidden" style="position: relative; height: 100%; display: flex; flex-direction: column;">
-          <!-- Header gradient background -->
           <div id="library-detail-bg" style="position: absolute; top: -30px; left: -30px; right: -30px; height: 500px; background: linear-gradient(to bottom, rgba(138,43,226,0.3) 0%, rgba(30,33,42,0) 100%); z-index: 0; pointer-events: none;"></div>
           
           <div style="position: relative; z-index: 1; flex-shrink: 0;">
@@ -226,9 +276,63 @@
         </div>
       </div>
 
-      <!-- PLAYER VIEW (Original Layout) -->
-      <div id="player-view" class="view-container hidden">
-        <div class="app-container">
+      <!-- 4. ARTIST DETAIL VIEW (YouTube Music Style) -->
+      <div id="artist-view" class="view-container hidden" style="padding: 30px; position: relative; height: 100%; display: flex; flex-direction: column; overflow-y: auto;">
+        <button id="btn-back-artist" class="bp-btn" style="margin-bottom: 20px; width: fit-content; padding: 5px 15px; font-family: 'Silkscreen', monospace; font-size: 16px; background: rgba(255,255,255,0.1); border-radius: 20px; z-index: 2;"><img class="pixel-icon" src="assets/icons/icon_back.bmp"> Kembali</button>
+        
+        <div style="display: flex; gap: 30px; align-items: center; margin-bottom: 25px; z-index: 2; flex-wrap: wrap;">
+          <div id="artist-view-avatar" style="width: 180px; height: 180px; border-radius: 50%; background-size: cover; background-position: center; border: 3px solid #00ffcc; box-shadow: 0 0 25px rgba(0,255,204,0.3);"></div>
+          <div>
+            <div style="font-size: 13px; color: #00ffcc; letter-spacing: 1px; font-weight: bold; margin-bottom: 5px;">PROFIL ARTIS</div>
+            <h1 id="artist-view-name" style="font-size: 48px; margin: 0 0 8px 0; font-weight: bold; color: #fff;">Artist Name</h1>
+            <div id="artist-view-count" style="font-size: 16px; color: #aaa; margin-bottom: 15px;">0 Lagu di Koleksi</div>
+            
+            <div style="display: flex; gap: 12px; align-items: center;">
+              <button id="btn-artist-play-all" class="bp-btn" style="padding: 8px 20px; font-family: inherit; font-size: 14px; font-weight: bold; background: #00ffcc; color: #000; border-radius: 20px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                ▶ Putar Semua
+              </button>
+              <button id="btn-artist-shuffle" class="bp-btn" style="padding: 8px 20px; font-family: inherit; font-size: 14px; background: rgba(255,255,255,0.1); color: #fff; border-radius: 20px; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                🔀 Putar Acak
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div style="font-size: 20px; font-weight: bold; color: #fff; margin-bottom: 15px;">Daftar Lagu</div>
+        <div id="artist-view-tracklist" class="library-tracklist" style="flex-grow: 1; overflow-y: auto; padding-right: 10px;">
+          <!-- Injected by JS -->
+        </div>
+      </div>
+
+      <!-- 5. FULLSCREEN KARAOKE LYRICS VIEW -->
+      <div id="fullscreen-lyrics-view" class="view-container hidden" style="position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1500; background: #07090e; display: flex; flex-direction: column; overflow: hidden;">
+        <div class="fs-lyrics-header" style="display: flex; justify-content: space-between; align-items: center; padding: 20px 30px; border-bottom: 1px solid rgba(255,255,255,0.08); z-index: 10;">
+          <div style="display: flex; align-items: center; gap: 15px;">
+            <div id="fs-lyrics-art" style="width: 48px; height: 48px; border-radius: 6px; background-size: cover; background-color: #222;"></div>
+            <div>
+              <div id="fs-lyrics-title" style="font-size: 20px; font-weight: bold; color: #fff;">Track Title</div>
+              <div id="fs-lyrics-artist" style="font-size: 14px; color: #00ffcc;">Artist Name</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <button id="btn-fs-lyrics-close" class="bp-btn" style="font-size: 18px; color: #fff; padding: 6px 14px; border-radius: 6px; background: rgba(255,255,255,0.1);" title="Tutup Layar Penuh">✕ Tutup (Esc)</button>
+          </div>
+        </div>
+
+        <div id="fs-lyrics-container" class="fs-lyrics-container" style="flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 80px 40px; text-align: center; scroll-behavior: smooth;">
+          <!-- Injected by JS -->
+        </div>
+      </div>
+
+      <!-- 6. PLAYER VIEW (Turntable Layout) -->
+      <div id="player-view" class="view-container hidden" style="position: relative;">
+        <!-- Top Close Player Button -->
+        <div style="position: absolute; top: 20px; left: 20px; z-index: 100;">
+          <button id="btn-close-player" class="bp-btn" style="font-family: 'Silkscreen', monospace; font-size: 13px; padding: 6px 15px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25); border-radius: 20px; color: #fff; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);" title="Tutup Pemutar Vinyl (Kembali)">
+            <img class="pixel-icon" src="assets/icons/icon_back.bmp"> <span>Tutup Pemutar</span>
+          </button>
+        </div>
+        <div class="app-container" style="padding-top: 30px;">
           
           <!-- LIBRARY CONTAINER (Left Pillar) -->
           <div class="panel library-panel">
@@ -293,7 +397,7 @@
                   <img src="assets/btn_next.png">
                 </button>
                 
-                <!-- RPM Speed Selectors (33 & 45 RPM Tactile Buttons with labels below) -->
+                <!-- RPM Speed Selectors (33 & 45 RPM) -->
                 <div class="speed-control-group">
                   <div class="speed-btn-unit" id="unit-speed-33" title="Kecepatan Standar: 33⅓ RPM">
                     <button class="speed-btn active" id="btn-speed-33-btn"></button>
@@ -356,9 +460,31 @@
                 </div>
 
                 <!-- VU Meter -->
-                <div class="vu-meter-container">
-                  <div class="vu-channel" id="vu-l"></div>
-                  <div class="vu-channel" id="vu-r"></div>
+                <div class="vu-meter-container" title="Stereo VU Meter LEDs">
+                  <div class="vu-channel" id="vu-l">
+                    <div class="vu-led green"></div>
+                    <div class="vu-led green"></div>
+                    <div class="vu-led green"></div>
+                    <div class="vu-led green"></div>
+                    <div class="vu-led green"></div>
+                    <div class="vu-led green"></div>
+                    <div class="vu-led yellow"></div>
+                    <div class="vu-led yellow"></div>
+                    <div class="vu-led red"></div>
+                    <div class="vu-led red"></div>
+                  </div>
+                  <div class="vu-channel" id="vu-r">
+                    <div class="vu-led green"></div>
+                    <div class="vu-led green"></div>
+                    <div class="vu-led green"></div>
+                    <div class="vu-led green"></div>
+                    <div class="vu-led green"></div>
+                    <div class="vu-led green"></div>
+                    <div class="vu-led yellow"></div>
+                    <div class="vu-led yellow"></div>
+                    <div class="vu-led red"></div>
+                    <div class="vu-led red"></div>
+                  </div>
                 </div>
 
                 <!-- Master Volume -->
@@ -404,9 +530,9 @@
     <footer class="bottom-player">
       <!-- Left: Playback Controls & Progress -->
       <div class="bp-left">
-        <button id="bp-prev" class="bp-btn"><img class="pixel-icon" src="assets/icons/icon_prev.bmp"></button>
-        <button id="bp-play" class="bp-btn play-btn"><img class="pixel-icon" src="assets/icons/icon_play.bmp"></button>
-        <button id="bp-next" class="bp-btn"><img class="pixel-icon" src="assets/icons/icon_next.bmp"></button>
+        <button id="bp-prev" class="bp-btn" title="Sebelumnya (P)"><img class="pixel-icon" src="assets/icons/icon_prev.bmp"></button>
+        <button id="bp-play" class="bp-btn play-btn" title="Putar / Jeda (Spasi)"><img class="pixel-icon" src="assets/icons/icon_play.bmp"></button>
+        <button id="bp-next" class="bp-btn" title="Berikutnya (N)"><img class="pixel-icon" src="assets/icons/icon_next.bmp"></button>
         <span id="bp-time" class="bp-time">0:00 / 0:00</span>
       </div>
 
@@ -417,8 +543,8 @@
           <div id="bp-title" class="bp-title">No Track Selected</div>
           <div id="bp-artist" class="bp-artist">-</div>
         </div>
-        <button id="bp-like" class="bp-btn small"><img class="pixel-icon" src="assets/icons/icon_like.bmp"></button>
-        <button id="bp-dislike" class="bp-btn small"><img class="pixel-icon" src="assets/icons/icon_dislike.bmp"></button>
+        <button id="bp-like" class="bp-btn small" title="Suka Lagu (L)"><img class="pixel-icon" src="assets/icons/icon_like.bmp"></button>
+        <button id="bp-dislike" class="bp-btn small" title="Tidak Suka"><img class="pixel-icon" src="assets/icons/icon_dislike.bmp"></button>
       </div>
 
       <!-- Right: Extra Controls -->
@@ -479,7 +605,10 @@
   <div id="lyrics-drawer" class="lyrics-drawer hidden">
     <div class="lyrics-header">
       <div style="font-size: 17px; font-weight: bold; color: #ff007f;">🎤 Lirik & Karaoke Retro</div>
-      <button id="btn-close-lyrics" class="bp-btn" style="font-size: 20px; color: #888;">✕</button>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <button id="btn-expand-lyrics" class="bp-btn" style="font-size: 14px; color: #00ffcc;" title="Buka Lirik Layar Penuh">⤢ Full</button>
+        <button id="btn-close-lyrics" class="bp-btn" style="font-size: 20px; color: #888;">✕</button>
+      </div>
     </div>
 
     <div class="lyrics-track-banner" id="lyrics-track-banner">
@@ -497,9 +626,9 @@
       </button>
     </div>
 
-    <!-- Karaoke Timing Tuner Bar (Visible in Karaoke Mode) -->
+    <!-- Karaoke Timing Tuner Bar -->
     <div id="lyrics-sync-bar" class="lyrics-sync-bar">
-      <span style="color: #aaa;">⏱️ Sinkronisasi Tempo:</span>
+      <span style="color: #aaa;">⏱️ Sinkronisasi:</span>
       <div style="display: flex; gap: 6px; align-items: center;">
         <button id="btn-lyric-delay" class="retro-btn" style="padding: 2px 7px; font-size: 10px; height: 22px; cursor: pointer;" title="Mundurkan lirik 0.5 detik">-0.5s</button>
         <span id="lyric-offset-val" style="color: #00ffcc; font-weight: bold; min-width: 40px; text-align: center;">0.0s</span>
@@ -508,7 +637,7 @@
       </div>
     </div>
 
-    <!-- Reader Toolbar (Visible in Read Mode) -->
+    <!-- Reader Toolbar -->
     <div id="lyrics-reader-tools" class="lyrics-reader-tools hidden">
       <button id="btn-copy-lyrics" class="retro-btn" style="padding: 3px 10px; font-size: 10px; cursor: pointer;" title="Salin seluruh lirik ke clipboard">📋 Salin Lirik</button>
       <div style="display: flex; gap: 4px; align-items: center;">
@@ -544,7 +673,7 @@
     </div>
   </div>
 
-  <!-- RETRO MODAL (Create Playlist / Add to Playlist) -->
+  <!-- RETRO MODAL (Create Playlist / Add to Playlist / Settings / Command Palette) -->
   <div id="retro-modal-container" class="retro-modal-container hidden">
     <div class="retro-modal-backdrop"></div>
     <div class="retro-modal">
@@ -575,6 +704,7 @@
     <div id="toast-message" class="toast-message"></div>
   </div>
 
-  <script src="renderer.js"></script>
+  <!-- Modular Orchestrator Script -->
+  <script type="module" src="renderer.js"></script>
 </body>
 </html>
