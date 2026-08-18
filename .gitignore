@@ -6,3 +6,4 @@ bit-music/
 node_modules/
 music/
 lyrics/
+dist/

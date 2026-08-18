@@ -1754,20 +1754,40 @@ try {
       bpVolSlider.oninput = (e) => audioEngine.setVolume(parseFloat(e.target.value));
     }
 
-    // Mixer Toggles
+    // Mixer Toggles Initialization & Synchronization
     const autoMixToggle = document.getElementById('auto-mix-toggle');
-    if (autoMixToggle) autoMixToggle.onchange = (e) => state.updateSetting('autoMix', e.target.checked);
+    if (autoMixToggle) {
+      autoMixToggle.checked = !!state.settings.autoMix;
+      autoMixToggle.onchange = (e) => {
+        state.updateSetting('autoMix', e.target.checked);
+        showToast(e.target.checked ? 'Auto Mix (Genre) Aktif 🔀' : 'Auto Mix Nonaktif');
+        sfx.play('click');
+      };
+    }
 
     const darkModeToggle = document.getElementById('dark-mode-toggle');
     if (darkModeToggle) {
+      darkModeToggle.checked = state.settings.darkMode !== false;
+      document.body.classList.toggle('dark-mode', darkModeToggle.checked);
       darkModeToggle.onchange = (e) => {
         document.body.classList.toggle('dark-mode', e.target.checked);
         state.updateSetting('darkMode', e.target.checked);
+        showToast(e.target.checked ? 'Studio Lights: Redup (Dark) 💡' : 'Studio Lights: Terang');
+        sfx.play('click');
       };
     }
 
     const lofiToggle = document.getElementById('lofi-toggle');
-    if (lofiToggle) lofiToggle.onchange = (e) => state.updateSetting('lofiNoise', e.target.checked);
+    if (lofiToggle) {
+      lofiToggle.checked = !!state.settings.lofiNoise;
+      audioEngine.setLofiNoise(lofiToggle.checked);
+      lofiToggle.onchange = (e) => {
+        state.updateSetting('lofiNoise', e.target.checked);
+        audioEngine.setLofiNoise(e.target.checked);
+        showToast(e.target.checked ? 'Lo-Fi Dust (Vinyl Noise): Aktif 📻' : 'Lo-Fi Dust: Nonaktif');
+        sfx.play(e.target.checked ? 'powerup' : 'click');
+      };
+    }
 
     // SFX Hardware Button
     if (bpSfxToggle) {
@@ -1818,6 +1838,102 @@ try {
     }
     if (btnFsLyricsClose) {
       btnFsLyricsClose.onclick = () => router.navigate('player');
+    }
+    // Mini Player Widget Toggle & Controls
+    const miniWidget = document.getElementById('mini-player-widget');
+    const ledBpMini = document.getElementById('led-bp-mini');
+    const btnExpandMini = document.getElementById('btn-expand-mini');
+    const miniPrev = document.getElementById('mini-prev');
+    const miniPlay = document.getElementById('mini-play');
+    const miniNext = document.getElementById('mini-next');
+
+    if (bpMiniBtn && miniWidget) {
+      bpMiniBtn.onclick = (e) => {
+        e.stopPropagation();
+        const isHidden = miniWidget.classList.contains('hidden');
+        if (isHidden) {
+          miniWidget.classList.remove('hidden');
+          if (ledBpMini) ledBpMini.classList.add('active');
+          bpMiniBtn.classList.add('active');
+          updateMiniPlayerUI();
+          sfx.play('powerup');
+          showToast('⚡ Mini Player Aktif');
+        } else {
+          miniWidget.classList.add('hidden');
+          if (ledBpMini) ledBpMini.classList.remove('active');
+          bpMiniBtn.classList.remove('active');
+          sfx.play('click');
+          showToast('Mini Player Ditutup');
+        }
+      };
+    }
+
+    if (btnExpandMini && miniWidget) {
+      btnExpandMini.onclick = (e) => {
+        e.stopPropagation();
+        miniWidget.classList.add('hidden');
+        if (ledBpMini) ledBpMini.classList.remove('active');
+        if (bpMiniBtn) bpMiniBtn.classList.remove('active');
+        router.navigate('player');
+        sfx.play('powerup');
+      };
+    }
+
+    if (miniPrev) {
+      miniPrev.onclick = (e) => {
+        e.stopPropagation();
+        playPrevTrack();
+      };
+    }
+
+    if (miniPlay) {
+      miniPlay.onclick = (e) => {
+        e.stopPropagation();
+        togglePlay();
+      };
+    }
+
+    if (miniNext) {
+      miniNext.onclick = (e) => {
+        e.stopPropagation();
+        playNextTrack();
+      };
+    }
+
+    // Mini Player Draggable Widget
+    const miniHeader = document.querySelector('.mini-player-header');
+    if (miniWidget && miniHeader) {
+      let isDraggingMini = false;
+      let startX = 0, startY = 0, initialLeft = 0, initialTop = 0;
+
+      miniHeader.style.cursor = 'grab';
+      miniHeader.onmousedown = (e) => {
+        if (e.target.id === 'btn-expand-mini') return;
+        isDraggingMini = true;
+        miniHeader.style.cursor = 'grabbing';
+        startX = e.clientX;
+        startY = e.clientY;
+        const rect = miniWidget.getBoundingClientRect();
+        initialLeft = rect.left;
+        initialTop = rect.top;
+
+        document.onmousemove = (moveE) => {
+          if (!isDraggingMini) return;
+          const dx = moveE.clientX - startX;
+          const dy = moveE.clientY - startY;
+          miniWidget.style.bottom = 'auto';
+          miniWidget.style.right = 'auto';
+          miniWidget.style.left = `${Math.max(10, Math.min(window.innerWidth - miniWidget.offsetWidth - 10, initialLeft + dx))}px`;
+          miniWidget.style.top = `${Math.max(10, Math.min(window.innerHeight - miniWidget.offsetHeight - 10, initialTop + dy))}px`;
+        };
+
+        document.onmouseup = () => {
+          isDraggingMini = false;
+          miniHeader.style.cursor = 'grab';
+          document.onmousemove = null;
+          document.onmouseup = null;
+        };
+      };
     }
 
     // Progress bar click scrubbing

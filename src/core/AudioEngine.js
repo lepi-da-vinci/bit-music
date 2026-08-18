@@ -325,8 +325,8 @@ export class AudioEngine {
       let pink = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
       b6 = white * 0.115926;
 
-      if (Math.random() < 0.005) pink += (Math.random() * 2 - 1) * 8; // Random Vinyl Crackles
-      data[i] = pink * 0.03;
+      if (Math.random() < 0.008) pink += (Math.random() * 2 - 1) * 6; // Random Vinyl Crackles
+      data[i] = pink * 0.05;
     }
     return buffer;
   }
@@ -342,7 +342,7 @@ export class AudioEngine {
 
     const filter = this.audioCtx.createBiquadFilter();
     filter.type = 'lowpass';
-    filter.frequency.value = 3000;
+    filter.frequency.value = 3200;
 
     this.noiseGain = this.audioCtx.createGain();
     this.noiseGain.gain.value = 0;
@@ -352,6 +352,24 @@ export class AudioEngine {
     this.noiseGain.connect(this.audioCtx.destination);
 
     this.noiseNode.start();
+
+    // Immediately sync with state setting
+    if (state.settings.lofiNoise && (state.isPlaying || this.currentPlaybackRate > 0.05)) {
+      this.noiseGain.gain.setTargetAtTime(0.4, this.audioCtx.currentTime, 0.05);
+    }
+  }
+
+  setLofiNoise(enabled) {
+    if (enabled) {
+      this.initContext();
+      if (this.audioCtx && this.audioCtx.state === 'suspended') {
+        this.audioCtx.resume();
+      }
+    }
+    if (this.noiseGain && this.audioCtx) {
+      const target = (enabled && (state.isPlaying || this.currentPlaybackRate > 0.05)) ? 0.4 : 0;
+      this.noiseGain.gain.setTargetAtTime(target, this.audioCtx.currentTime, 0.05);
+    }
   }
 
   // Sleep Timer System
