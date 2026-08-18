@@ -1,9 +1,28 @@
+# Dependencies
+node_modules/
+
+# Production Build Output
+dist/
+build/
+
+# Logs & Temporary Files
+error_log.txt
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Environment & Python
 venv/
 __pycache__/
 *.pyc
 .env
 bit-music/
-node_modules/
+
+# Assets
 music/
 lyrics/
-dist/

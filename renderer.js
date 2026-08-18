@@ -1,4 +1,16 @@
 // Retro Groove Music Player — Main Application Orchestrator
+window.onerror = function(msg, url, line, col, error) {
+  console.error("Global Renderer Error:", msg, url, line, col, error);
+  if (window.api && window.api.logError) {
+    window.api.logError(`Global Error: ${msg} at ${url}:${line}:${col}\n${error ? error.stack : ''}`);
+  }
+};
+window.onunhandledrejection = function(event) {
+  console.error("Unhandled Rejection:", event.reason);
+  if (window.api && window.api.logError) {
+    window.api.logError(`Unhandled Rejection: ${event.reason ? (event.reason.stack || event.reason) : ''}`);
+  }
+};
 
 import { state } from './src/core/StateManager.js';
 import { AudioEngine } from './src/core/AudioEngine.js';
@@ -18,6 +30,7 @@ import {
   MOOD_KEYWORDS,
   RETRO_GENRES
 } from './src/data/smartAlbumDefs.js';
+import { PRELOADED_TRACKS } from './src/data/preloadedTracks.js';
 import {
   showToast,
   showCreatePlaylistModal,
@@ -440,95 +453,6 @@ try {
     document.querySelectorAll('.album-item').forEach(el => {
       el.classList.toggle('active', el.getAttribute('data-album') === state.currentActiveAlbum);
     });
-  }
-
-  // Artist Detail Profile Page (YouTube Music Reference)
-  function showArtistDetail(artistName) {
-    const artistView = document.getElementById('artist-view');
-    const avatarEl = document.getElementById('artist-view-avatar');
-    const nameEl = document.getElementById('artist-view-name');
-    const countEl = document.getElementById('artist-view-count');
-    const tracklistEl = document.getElementById('artist-view-tracklist');
-    const btnPlayAll = document.getElementById('btn-artist-play-all');
-    const btnShuffle = document.getElementById('btn-artist-shuffle');
-    const btnBack = document.getElementById('btn-back-artist');
-
-    if (!artistView) return;
-    const artistTracks = state.masterPlaylist.filter(t => t.artist === artistName);
-
-    if (avatarEl) avatarEl.style.backgroundImage = `url('${generateArtistPixelAvatar(artistName)}')`;
-    if (nameEl) nameEl.innerText = artistName;
-    if (countEl) countEl.innerText = `${artistTracks.length} Lagu di Koleksi Kamu`;
-
-    if (tracklistEl) {
-      tracklistEl.innerHTML = '';
-      artistTracks.forEach((track, idx) => {
-        const cover = track.coverBase64 ? `url('${track.coverBase64}')` : 'none';
-        const isFav = state.isFavorite(track.filename);
-        const item = document.createElement('div');
-        item.className = 'library-track-item';
-        item.innerHTML = `
-          <div class="library-track-art" style="background-image: ${cover}; width: 40px; height: 40px; border-radius: 4px; margin-right: 15px; background-size: cover; background-position: center; background-color: #222;"></div>
-          <div class="library-track-info" style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center;">
-            <div class="library-track-title">${track.title}</div>
-            <div class="library-track-artist" style="font-size: 18px; color: var(--text-dim);">${track.artist} • ${track.album}</div>
-          </div>
-          <div class="library-track-actions" style="display: flex; gap: 10px;">
-            <span class="track-like ${isFav ? 'icon-active' : ''}" style="cursor: pointer;"><img class="pixel-icon" src="assets/icons/icon_like.bmp"></span>
-            <span class="track-more" style="cursor: pointer;" title="Tambah ke Playlist"><img class="pixel-icon" src="assets/icons/icon_more.bmp"></span>
-          </div>
-        `;
-        item.onclick = (e) => {
-          if (e.target.closest('.track-like') || e.target.closest('.track-more')) return;
-          state.playlist = [...artistTracks];
-          loadTrack(idx);
-          playTrack();
-          router.navigate('player');
-        };
-        const likeBtn = item.querySelector('.track-like');
-        if (likeBtn) {
-          likeBtn.onclick = (e) => {
-            e.stopPropagation();
-            state.toggleFavorite(track);
-            likeBtn.classList.toggle('icon-active', state.isFavorite(track.filename));
-          };
-        }
-        const moreBtn = item.querySelector('.track-more');
-        if (moreBtn) {
-          moreBtn.onclick = (e) => {
-            e.stopPropagation();
-            showAddToPlaylistModal(track);
-          };
-        }
-        tracklistEl.appendChild(item);
-      });
-    }
-
-    if (btnPlayAll) {
-      btnPlayAll.onclick = () => {
-        state.playlist = [...artistTracks];
-        loadTrack(0);
-        playTrack();
-        router.navigate('player');
-      };
-    }
-
-    if (btnShuffle) {
-      btnShuffle.onclick = () => {
-        state.playlist = [...artistTracks];
-        setShuffleState(true, false);
-        const rand = Math.floor(Math.random() * artistTracks.length);
-        loadTrack(rand);
-        playTrack();
-        router.navigate('player');
-      };
-    }
-
-    if (btnBack) {
-      btnBack.onclick = () => router.back();
-    }
-
-    router.navigate('artist');
   }
 
   // Refresh Recently Played & Most Played Sections on Home
@@ -998,6 +922,120 @@ try {
         if (libraryAlbumsContainer) libraryAlbumsContainer.classList.remove('hidden');
       };
     }
+  }
+
+  // Artist Detail View (YouTube Music Style)
+  function showArtistDetail(artistName) {
+    if (!artistName) return;
+    const cleanArt = artistName.replace(/\s*-\s*Topic$/i, '').trim();
+    if (cleanArt === 'Unknown Artist' || cleanArt === 'Berkas Lokal') {
+      showToast(`Artis "${cleanArt}" tidak memiliki profil publik.`);
+      return;
+    }
+
+    const tracks = state.masterPlaylist.filter(t => t.artist.toLowerCase().trim() === cleanArt.toLowerCase());
+    if (tracks.length === 0) {
+      showToast(`Tidak ditemukan lagu dari ${cleanArt}`);
+      return;
+    }
+
+    const artistAvatar = document.getElementById('artist-view-avatar');
+    const artistNameEl = document.getElementById('artist-view-name');
+    const artistCountEl = document.getElementById('artist-view-count');
+    const tracklistEl = document.getElementById('artist-view-tracklist');
+    const btnPlayAll = document.getElementById('btn-artist-play-all');
+    const btnShuffle = document.getElementById('btn-artist-shuffle');
+    const btnBack = document.getElementById('btn-back-artist');
+
+    if (artistAvatar) {
+      const avatarUrl = generateArtistPixelAvatar(cleanArt);
+      artistAvatar.style.backgroundImage = `url('${avatarUrl}')`;
+    }
+    if (artistNameEl) artistNameEl.innerText = cleanArt;
+    if (artistCountEl) artistCountEl.innerText = `${tracks.length} Lagu di Koleksi`;
+
+    if (btnPlayAll) {
+      btnPlayAll.onclick = () => {
+        state.playlist = [...tracks];
+        renderPlaylist();
+        loadTrack(0);
+        playTrack();
+        router.navigate('player');
+        showToast(`▶ Memutar semua lagu dari ${cleanArt}`);
+      };
+    }
+
+    if (btnShuffle) {
+      btnShuffle.onclick = () => {
+        state.playlist = [...tracks];
+        setShuffleState(true, false);
+        renderPlaylist();
+        loadTrack(Math.floor(Math.random() * tracks.length));
+        playTrack();
+        router.navigate('player');
+        showToast(`🔀 Memutar acak lagu dari ${cleanArt}`);
+      };
+    }
+
+    if (btnBack) {
+      btnBack.onclick = () => {
+        router.back();
+      };
+    }
+
+    if (tracklistEl) {
+      tracklistEl.innerHTML = '';
+      tracks.forEach((track, idx) => {
+        const item = document.createElement('div');
+        item.className = 'library-track-item';
+        const isFav = state.isFavorite(track.filename);
+        item.innerHTML = `
+          <div style="width: 25px; text-align: center; color: #888; font-size: 13px;">${idx + 1}</div>
+          <div class="library-track-art" style="background-image: ${track.coverBase64 ? `url('${track.coverBase64}')` : '#222'}; width: 42px; height: 42px; border-radius: 4px; background-size: cover; background-position: center; margin: 0 12px;"></div>
+          <div class="library-track-info" style="flex: 1; min-width: 0;">
+            <div class="library-track-title" style="font-weight: bold; color: #fff; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${track.title}</div>
+            <div class="library-track-artist" style="font-size: 12px; color: #aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${track.album || cleanArt}</div>
+          </div>
+          <div class="library-track-actions" style="display: flex; gap: 10px; align-items: center;">
+            <span class="track-like ${isFav ? 'icon-active' : ''}" style="cursor: pointer;"><img class="pixel-icon" src="assets/icons/icon_like.bmp"></span>
+            <span class="track-more" style="cursor: pointer;" title="Opsi"><img class="pixel-icon" src="assets/icons/icon_more.bmp"></span>
+          </div>
+        `;
+
+        item.onclick = (e) => {
+          if (e.target.closest('.track-like') || e.target.closest('.track-more')) return;
+          state.playlist = [...tracks];
+          renderPlaylist();
+          loadTrack(idx);
+          playTrack();
+          router.navigate('player');
+        };
+
+        const likeBtn = item.querySelector('.track-like');
+        if (likeBtn) {
+          likeBtn.onclick = (e) => {
+            e.stopPropagation();
+            state.toggleFavorite(track);
+            const fav = state.isFavorite(track.filename);
+            likeBtn.classList.toggle('icon-active', fav);
+            updateFavoritesUI();
+          };
+        }
+
+        const moreBtn = item.querySelector('.track-more');
+        if (moreBtn) {
+          moreBtn.onclick = (e) => {
+            e.stopPropagation();
+            showAddToPlaylistModal(track);
+          };
+        }
+
+        tracklistEl.appendChild(item);
+      });
+    }
+
+    router.navigate('artist');
+    sfx.play('tab');
   }
 
   // Queue Drawer Update (With Drag & Drop Reordering and 'Play Next')
@@ -1496,16 +1534,28 @@ try {
   // Load Music Library Files
   async function loadMusic() {
     try {
-      const result = window.api ? await window.api.readDir('music') : { success: false };
-      if (result.success) {
-        state.masterPlaylist = result.files.map((f, idx) => {
+      let rawFiles = (Array.isArray(PRELOADED_TRACKS) && PRELOADED_TRACKS.length > 0) ? [...PRELOADED_TRACKS] : [];
+      // 1. Try reading from window.api
+      if (window.api && window.api.readDir) {
+        try {
+          const result = await window.api.readDir('music');
+          if (result && result.success && Array.isArray(result.files) && result.files.length > 0) {
+            rawFiles = result.files;
+          }
+        } catch (ipcErr) {
+          console.warn("IPC readDir notice:", ipcErr);
+        }
+      }
+
+      if (rawFiles && rawFiles.length > 0) {
+        state.masterPlaylist = rawFiles.map((f, idx) => {
           const albumName = (f.album && f.album !== "Unknown Album") ? f.album : f.title;
           const fallbackSeed = f.title + "_" + f.artist + "_" + idx;
           const cover = generateProceduralCover(fallbackSeed);
 
           return {
             filename: f.filename,
-            path: window.api.getMusicPath(f.filename),
+            path: (window.api && window.api.getMusicPath) ? window.api.getMusicPath(f.filename) : `music/${encodeURIComponent(f.filename)}`,
             title: f.title || f.filename.replace(/\.[^/.]+$/, ""),
             artist: f.artist || "Unknown Artist",
             genre: f.genre || "Pop",
@@ -1586,6 +1636,9 @@ try {
       }
     } catch (e) {
       console.error("loadMusic error:", e);
+      if (window.api && window.api.logError) {
+        window.api.logError("loadMusic Error: " + e.message + "\n" + e.stack);
+      }
     }
   }
 
@@ -2088,6 +2141,56 @@ try {
     setupLiveSearch('home-search-input', 'home-search-results');
     setupLiveSearch('explore-search-input', 'explore-search-results');
 
+    // Genre card interactive filtering
+    document.querySelectorAll('.genre-card').forEach(card => {
+      card.style.cursor = 'pointer';
+      card.onclick = () => {
+        const genreName = card.innerText.trim().toLowerCase();
+        sfx.play('click');
+        const matched = state.masterPlaylist.filter(t => {
+          const txt = `${t.genre} ${t.album} ${t.title} ${t.artist}`.toLowerCase();
+          return txt.includes(genreName);
+        });
+
+        if (matched.length > 0) {
+          state.playlist = matched;
+          renderPlaylist();
+          loadTrack(0);
+          playTrack();
+          router.navigate('player');
+          showToast(`⚡ Memutar genre ${card.innerText} (${matched.length} lagu)`);
+        } else {
+          // Fallback random mix
+          state.playlist = [...state.masterPlaylist].sort(() => Math.random() - 0.5);
+          renderPlaylist();
+          loadTrack(0);
+          playTrack();
+          router.navigate('player');
+          showToast(`⚡ Memutar mix tema ${card.innerText}`);
+        }
+      };
+    });
+
+    // Artist quick navigation on LCD & Bottom Player
+    if (lcdArtist) {
+      lcdArtist.style.cursor = 'pointer';
+      lcdArtist.title = 'Buka Profil Artis';
+      lcdArtist.onclick = (e) => {
+        e.stopPropagation();
+        const current = state.getCurrentTrack();
+        if (current && current.artist) showArtistDetail(current.artist);
+      };
+    }
+    if (bpArtist) {
+      bpArtist.style.cursor = 'pointer';
+      bpArtist.title = 'Buka Profil Artis';
+      bpArtist.onclick = (e) => {
+        e.stopPropagation();
+        const current = state.getCurrentTrack();
+        if (current && current.artist) showArtistDetail(current.artist);
+      };
+    }
+
     // Mood chips filtering
     document.querySelectorAll('.mood-chip').forEach(chip => {
       chip.onclick = () => {
@@ -2124,6 +2227,7 @@ try {
   setupEventHandlers();
 
   // Start App
+  console.log("🚀 Renderer.js loaded! Loading music library...");
   loadMusic();
 
 } catch (err) {

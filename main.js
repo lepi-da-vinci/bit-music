@@ -2,7 +2,15 @@ const { app, BrowserWindow, ipcMain, dialog } = require('electron')
 const path = require('path')
 const fs = require('fs')
 
+// Ensure 512x512 app icon exists in assets/
+const srcIcon = "C:\\Users\\muham\\.gemini\\antigravity-ide\\brain\\d32b0767-6ff0-4cf6-a140-cabc35221915\\app_icon_1787052794642.jpg";
+const destIcon = path.join(__dirname, 'assets/app_icon.png');
+if (fs.existsSync(srcIcon) && !fs.existsSync(destIcon)) {
+  try { fs.copyFileSync(srcIcon, destIcon); } catch (e) {}
+}
+
 function createWindow () {
+  const iconPath = fs.existsSync(destIcon) ? destIcon : path.join(__dirname, 'assets/vinyl_red.png');
   const win = new BrowserWindow({
     width: 1200,
     height: 720,
@@ -14,10 +22,20 @@ function createWindow () {
       contextIsolation: true,
       nodeIntegration: false
     },
-    icon: path.join(__dirname, 'assets/vinyl_red.png')
+    icon: iconPath
   })
 
   win.loadFile('index.html')
+
+  win.webContents.on('console-message', (event, level, message, line, sourceId) => {
+    console.log(`[Browser Console]: ${message}`);
+  });
+
+  win.webContents.on('before-input-event', (event, input) => {
+    if (input.key === 'F12' && input.type === 'keyDown') {
+      win.webContents.toggleDevTools();
+    }
+  });
 }
 
 app.whenReady().then(() => {
@@ -56,75 +74,66 @@ function parseFilenameFallback(filename) {
   return { artist, title };
 }
 
-// IPC Handlers
-ipcMain.handle('read-dir', async (event, dirPath) => {
+// Safe IPC Handler to avoid duplicate handler exceptions
+function safeHandle(channel, handler) {
   try {
-    const fullPath = path.isAbsolute(dirPath) ? dirPath : path.join(process.resourcesPath, dirPath)
-    const searchPath = app.isPackaged ? fullPath : path.join(__dirname, dirPath)
+    ipcMain.removeHandler(channel);
+  } catch (e) {}
+  ipcMain.handle(channel, handler);
+}
+
+// IPC Handlers
+safeHandle('read-dir', async (event, dirPath) => {
+  try {
+    const fullPath = path.isAbsolute(dirPath) ? dirPath : path.join(process.resourcesPath, dirPath);
+    const searchPath = app.isPackaged ? fullPath : path.join(__dirname, dirPath);
+    const cacheFile = path.join(__dirname, 'library_cache.json');
     
     if (fs.existsSync(searchPath)) {
-      const files = fs.readdirSync(searchPath)
-      const musicFiles = files.filter(f => /\.(mp3|wav|ogg|m4a|flac|aac)$/i.test(f))
+      const files = fs.readdirSync(searchPath);
+      const musicFiles = files.filter(f => /\.(mp3|wav|ogg|m4a|flac|aac)$/i.test(f));
       
-      let mm;
-      try {
-        mm = await import('music-metadata');
-      } catch (e) {
+      // 1. Try reading from library_cache.json for instant zero-latency startup
+      let cachedMap = {};
+      if (fs.existsSync(cacheFile)) {
         try {
-          mm = require('music-metadata');
-        } catch (e2) {
-          // music-metadata not available
-        }
+          const cacheData = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
+          if (Array.isArray(cacheData)) {
+            cacheData.forEach(item => { if (item.filename) cachedMap[item.filename] = item; });
+          }
+        } catch (e) {}
       }
 
-      const results = await Promise.all(musicFiles.map(async (f) => {
-        const filePath = path.join(searchPath, f);
-        let metadata = null;
-        if (mm) {
-          try {
-            // Fast parse with 500ms timeout per file
-            const parsePromise = mm.parseFile(filePath, { duration: false, skipCovers: true });
-            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 500));
-            metadata = await Promise.race([parsePromise, timeoutPromise]);
-          } catch (err) {
-            // ignore timeout and use fallback
-          }
+      // 2. Build results instantly
+      const results = musicFiles.map(f => {
+        if (cachedMap[f] && cachedMap[f].title && cachedMap[f].artist) {
+          return cachedMap[f];
         }
-        
         const fallback = parseFilenameFallback(f);
-        let title = fallback.title;
-        let artist = fallback.artist;
-        let genre = "Pop";
-        let album = "Unknown Album";
-        
-        if (metadata && metadata.common) {
-          if (metadata.common.title) title = metadata.common.title;
-          if (metadata.common.artist) artist = metadata.common.artist;
-          if (metadata.common.album) album = metadata.common.album;
-          if (metadata.common.genre && metadata.common.genre.length > 0) {
-            genre = metadata.common.genre[0];
-          }
-        }
-        
         return {
           filename: f,
-          title: title || f.replace(/\.[^/.]+$/, ""),
-          artist: artist || "Unknown Artist",
-          album: album,
-          genre: genre
+          title: fallback.title || f.replace(/\.[^/.]+$/, ""),
+          artist: fallback.artist || "Unknown Artist",
+          album: fallback.title || "Unknown Album",
+          genre: "Pop"
         };
-      }));
-      
-      return { success: true, files: results, basePath: searchPath }
+      });
+
+      // Save / update cache file
+      try {
+        fs.writeFileSync(cacheFile, JSON.stringify(results, null, 2), 'utf8');
+      } catch (e) {}
+
+      return { success: true, files: results, basePath: searchPath };
     }
-    return { success: true, files: [], basePath: searchPath }
+    return { success: true, files: [], basePath: searchPath };
   } catch (error) {
-    return { success: false, error: error.message }
+    return { success: false, error: error.message };
   }
-})
+});
 
 // Read Lyric File (.lrc)
-ipcMain.handle('read-lyric', async (event, filename) => {
+safeHandle('read-lyric', async (event, filename) => {
   try {
     const lyricsDir = path.join(__dirname, 'lyrics');
     if (!fs.existsSync(lyricsDir)) {
@@ -162,7 +171,7 @@ ipcMain.handle('read-lyric', async (event, filename) => {
 });
 
 // Save Lyric File (.lrc)
-ipcMain.handle('save-lyric', async (event, data) => {
+safeHandle('save-lyric', async (event, data) => {
   try {
     const { filename, content } = data;
     const lyricsDir = path.join(__dirname, 'lyrics');
@@ -201,7 +210,7 @@ function decodeHtmlEntities(str) {
 }
 
 // Multi-Source Online Lyrics Engine (YouTube Captions / LRCLIB / Lyrist)
-ipcMain.handle('fetch-online-lyrics', async (event, query) => {
+safeHandle('fetch-online-lyrics', async (event, query) => {
   const { title, artist, filename } = query;
   
   let cleanTitle = (title || '').replace(/\.[^/.]+$/, '');
@@ -323,6 +332,10 @@ ipcMain.handle('fetch-online-lyrics', async (event, query) => {
   return { success: false, message: 'Lirik tidak ditemukan di semua sumber online' };
 });
 
-ipcMain.handle('log-error', (event, err) => {
-  fs.writeFileSync('error_log.txt', err);
+safeHandle('log-error', (event, err) => {
+  console.error('[Renderer Error]:', err);
+  try {
+    fs.appendFileSync(path.join(__dirname, 'error_log.txt'), `${new Date().toISOString()}: ${err}\n`);
+  } catch (e) {}
+  return true;
 });

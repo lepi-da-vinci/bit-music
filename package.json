@@ -20,7 +20,7 @@
     "productName": "Retro Groove",
     "win": {
       "target": "nsis",
-      "icon": "assets/vinyl_red.png"
+      "icon": "assets/app_icon.png"
     },
     "directories": {
       "output": "dist"
