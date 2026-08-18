@@ -742,6 +742,56 @@ try {
   let currentLyricTrackKey = '';
 
   const BUILTIN_LRC = {
+    // KECOUD - NURLELA (Remix)
+    'nurlela': `[00:00.00]♪ Kecoud - Nurlela (Remix) ♪
+[00:07.50]Ahai Nurlela sukanya berlagu mambo chacha
+[00:14.20]Hatinya takkan senang, duduknya tak tenang
+[00:17.80]Dengar bunyi kendang, ingin serta berlenggang
+[00:21.50]Hai Nurlela mendengar kalipso dengan bongo
+[00:27.80]Ingin menari sajo menari baduo
+[00:31.50]Siapo yang suko
+[00:34.80]Hai jelita, maukah kau berdansa
+[00:38.20]Pegang tangan ini ajari ku gerakannya
+[00:41.80]Hai jelita, engkau mau ke mana?
+[00:45.00]Stay here with me di atas lantai dansa
+[00:48.50]Banyak orang, but I'm different
+[00:52.00]Udah fakta, tak butuh koresponden
+[00:55.20]Tak perlu survey cari partner
+[00:58.50]There's no other option, aku paling bener
+[01:02.00]Nona did you noticed that?
+[01:03.80]Everyone lookin' on us
+[01:05.50]Don't worry 'bout it
+[01:07.20]Kita bawa dari atas
+[01:09.00]Sampe bawah
+[01:10.50]Hold my waist
+[01:12.00]Jangan lepas
+[01:13.80]Sampai lelah
+[01:15.50]Dancing just the two of us
+[01:17.50]Ahai Nurlela sukanya berlagu mambo chacha
+[01:24.00]Hatinya takkan senang, duduknya tak tenang
+[01:27.50]Dengar bunyi kendang, ingin serta berlenggang
+[01:31.00]Hai Nurlela mendengar kalipso dengan bongo
+[01:37.50]Ingin menari sajo menari baduo
+[01:41.00]Siapo yang suko
+[01:44.50]Hold my hand, nona say "I do"
+[01:46.50]Got that shit marked down
+[01:48.20]Wanna know you don't tell me "I don't wanna find out"
+[01:51.50]Senyumanmu membuatku keepin' looking
+[01:54.20]Mata udah locked in, I can't get away
+[01:58.00]I feel in "dunia lain" saat bersamamu
+[02:01.50]Tak watch Trans TV, but I want you dansa denganku
+[02:05.00]You got it all down, I'm the one you can call now
+[02:08.50]Shot me in operator, call me whenever you want
+[02:12.00]I know that you don't fuck with it
+[02:15.00]This kinda music pasti you would call "jamet"
+[02:18.50]I couldn't careless, I just want you to be honest
+[02:22.00]Lepas egomu menari bersamaku
+[02:25.50]Nona did you noticed that? Everyone lookin' on us
+[02:29.00]Don't worry 'bout it, kita bawa dari atas sampe bawah
+[02:32.80]Hold my waist, jangan lepas sampai lelah
+[02:36.20]Dancing just the two of us
+[02:40.00]🎵 [Outro]`,
+
     // 1. CRAYON CASE TRACKS (Indie Shoegaze / Pop Noise band from Surabaya)
     'crayon case - gravits': `[00:00.00]♪ Crayon Case - Gravits ♪
 [00:15.00][Intro - Shoegaze Guitar Distortion & Drum Build]
@@ -1487,7 +1537,26 @@ try {
     lyricsContent.classList.add(lyricFontSizes[currentFontSizeIdx]);
 
     const { list, sourceBadge, isSynced, rawText } = currentLyricsData;
-    if (!list || list.length === 0) return;
+    if (!list || list.length === 0) {
+      const track = playlist[currentIndex];
+      lyricsContent.innerHTML = `
+        <div style="color: #aaa; font-size: 13px; padding: 40px 15px; text-align: center; line-height: 1.6;">
+          <div style="font-size: 36px; margin-bottom: 12px;">🎵</div>
+          <div style="color: #fff; font-size: 15px; font-weight: bold; margin-bottom: 4px;">${track ? track.title : ''}</div>
+          <div style="color: #888; font-size: 12px; margin-bottom: 16px;">${track ? track.artist : ''}</div>
+          <div style="display: inline-block; padding: 6px 16px; border-radius: 6px; background: rgba(255, 71, 87, 0.15); border: 1px solid rgba(255, 71, 87, 0.4); color: #ff4757; font-size: 12px; font-weight: bold; margin-bottom: 16px; letter-spacing: 1px;">
+            LIRIK TIDAK ADA
+          </div>
+          <div style="color: #666; font-size: 11px; margin-bottom: 20px;">Lirik untuk lagu ini belum tersedia.</div>
+          <button id="btn-retry-lyrics-ui" class="retro-btn primary" style="font-size: 11px; padding: 6px 14px; cursor: pointer;">🔄 Cari Ulang Lirik</button>
+        </div>
+      `;
+      const btnRetry = document.getElementById('btn-retry-lyrics-ui');
+      if (btnRetry) {
+        btnRetry.onclick = () => updateLyricsDrawer(true);
+      }
+      return;
+    }
 
     if (sourceBadge) {
       const badge = document.createElement('div');
@@ -1720,11 +1789,14 @@ try {
 
     // 4. Fallback if not found
     lyricsContent.innerHTML = `
-      <div style="color: #aaa; font-size: 13px; padding: 30px 15px; text-align: center; line-height: 1.6;">
-        <div style="font-size: 32px; margin-bottom: 10px;">🎵</div>
+      <div style="color: #aaa; font-size: 13px; padding: 40px 15px; text-align: center; line-height: 1.6;">
+        <div style="font-size: 36px; margin-bottom: 12px;">🎵</div>
         <div style="color: #fff; font-size: 15px; font-weight: bold; margin-bottom: 4px;">${track.title}</div>
-        <div style="color: #888; font-size: 12px; margin-bottom: 15px;">${track.artist}</div>
-        <div style="color: #666; font-size: 11px; margin-bottom: 20px;">Lirik otomatis belum ditemukan. Anda dapat menambahkan berkas <b>.lrc</b> ke folder <code>lyrics/</code></div>
+        <div style="color: #888; font-size: 12px; margin-bottom: 16px;">${track.artist}</div>
+        <div style="display: inline-block; padding: 6px 16px; border-radius: 6px; background: rgba(255, 71, 87, 0.15); border: 1px solid rgba(255, 71, 87, 0.4); color: #ff4757; font-size: 12px; font-weight: bold; margin-bottom: 16px; letter-spacing: 1px;">
+          LIRIK TIDAK ADA
+        </div>
+        <div style="color: #666; font-size: 11px; margin-bottom: 20px;">Lirik untuk lagu ini belum tersedia di database maupun berkas lokal.</div>
         <button id="btn-retry-lyrics" class="retro-btn primary" style="font-size: 11px; padding: 6px 14px; cursor: pointer;">🔄 Cari Ulang Lirik</button>
       </div>
     `;
